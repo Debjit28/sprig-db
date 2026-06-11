@@ -2,24 +2,34 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log"
+
+	"go.etcd.io/bbolt"
 )
 
-func SaveData1(path string, data []byte) error {
-	fp, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
-	if err != nil {
-		return err
-	}
-	defer fp.Close()
-	_, err = fp.Write(data) //_ here is used for error handling, we are ignoring the path which is string
-	return err
-}
-
 func main() {
-	err := SaveData1("tes.txt", []byte("Hello, World!"))
+	db, err := bbolt.Open(".db", 0666, nil)
 	if err != nil {
-		fmt.Println("failed to load the database ")
-		return
+		log.Fatal(err)
 	}
-	fmt.Println("Data saved successfully.")
+	user := map[string]string{
+		"name": "Bhata",
+		"age":  "45",
+	}
+	db.Update(func(tx *bbolt.Tx) error {
+		bucket, err := tx.CreateBucket([]byte("user"))
+		if err != nil {
+			return err
+		}
+
+		for k, v := range user {
+			if err := bucket.Put([]byte(k), []byte(v)); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	fmt.Println("works.!!!")
 }
