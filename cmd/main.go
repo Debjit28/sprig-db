@@ -18,7 +18,7 @@ func main() {
 		"age":  "45",
 	}
 	db.Update(func(tx *bbolt.Tx) error {
-		bucket, err := tx.CreateBucket([]byte("user"))
+		bucket, err := tx.CreateBucket([]byte("users"))
 		if err != nil {
 			return err
 		}
@@ -38,5 +38,24 @@ func main() {
 		return nil
 	})
 
-	fmt.Println("works.!!!")
+	userData := make(map[string]string)
+	if err := db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte("users"))
+		if bucket == nil {
+
+			return fmt.Errorf("bucket (%s) not found", "users")
+
+		}
+
+		bucket.ForEach(func(k, v []byte) error {
+			userData[string(k)] = string(v)
+			return nil
+		})
+
+		return nil
+	}); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(user)
 }

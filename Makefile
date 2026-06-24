@@ -6,10 +6,10 @@ BUILD_DIR=./bin
 
 # Build the binary
 build:
-	go build -o ./bin/sprig-db ./cmd/main.go
+	@go build -o ./bin/sprig-db ./cmd/main.go
 
-run:
-	./bin/sprig-db
+run: build
+	@./bin/sprig-db
 
 test: 
-	go test -v ./...
+	@go test -v ./...
