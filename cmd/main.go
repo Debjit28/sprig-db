@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
 
@@ -22,10 +23,16 @@ func main() {
 			return err
 		}
 
+		id := uuid.New()
+
 		for k, v := range user {
 			if err := bucket.Put([]byte(k), []byte(v)); err != nil {
 				return err
 			}
+		}
+
+		if err := bucket.Put([]byte("id"), []byte(id.String())); err != nil {
+			return err
 		}
 
 		return nil
