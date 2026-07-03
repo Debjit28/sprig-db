@@ -9,13 +9,6 @@ import (
 
 func main() {
 
-	user := map[string]string{
-		"name": "Bhata",
-		"age":  "45",
-	}
-
-	_ = user
-
 	db, err := sprig.New()
 
 	if err != nil {
@@ -24,14 +17,25 @@ func main() {
 
 	}
 
-	coll, err := db.CreateCollection("users")
-
-	if err != nil {
-
-		log.Fatal(err)
-
+	user := map[string]string{
+		"name": "Bhata",
+		"age":  "45",
 	}
 
-	fmt.Printf("%+v\n", coll)
+	id, err := db.Insert("users", user)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// coll, err := db.CreateCollection("users")
+
+	// if err != nil {
+
+	// 	log.Fatal(err)
+
+	// }
+
+	fmt.Printf("%+v\n", id)
 
 }

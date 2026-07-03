@@ -78,19 +78,25 @@ func (s *Sprig) Insert(collName string, data M) (uuid.UUID, error) {
 		return id, err
 	}
 
-	for k, v := range data {
+	s.db.Update(func(tx *bbolt.Tx) error {
 
-		if err := coll.Put([]byte(k), []byte(v)); err != nil {
+		for k, v := range data {
 
-			return id, err
+			if err := coll.Put([]byte(k), []byte(v)); err != nil {
+
+				return err
+
+			}
 
 		}
 
-	}
+		if err := coll.Put([]byte("id"), []byte(id.String())); err != nil {
+			return err
+		}
 
-	if err := coll.Put([]byte("id"), []byte(id.String())); err != nil {
-		return id, err
-	}
+		return nil
+
+	})
 
 	return id, nil
 
