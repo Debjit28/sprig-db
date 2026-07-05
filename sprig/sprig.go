@@ -38,34 +38,25 @@ func New() (*Sprig, error) {
 }
 
 func (s *Sprig) CreateCollection(name string) (*Collection, error) {
-	coll := Collection{}
 
-	err := s.db.Update(func(tx *bbolt.Tx) error {
-		var (
-			err    error
-			bucket *bbolt.Bucket
-		)
-
-		if bucket == nil {
-			bucket, err = tx.CreateBucket([]byte(name))
-			if err != nil {
-				return err
-			}
-
-		}
-
-		coll.Bucket = bucket
-
-		return nil
-
-	})
+	tx, err := s.db.Begin(true)
 
 	if err != nil {
-
 		return nil, err
 	}
 
-	return &coll, nil
+	defer tx.Rollback()
+
+	// bucket := tx.Bucket([]byte(name))
+	// if bucket != nil {
+	// 	return &Collection{Bucket: bucket}, nil
+	// }
+	bucket, err := tx.CreateBucketIfNotExists([]byte(name))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Collection{Bucket: bucket}, nil
 
 }
 
@@ -73,30 +64,34 @@ func (s *Sprig) Insert(collName string, data M) (uuid.UUID, error) {
 
 	id := uuid.New()
 
-	coll, err := s.CreateCollection(collName)
+	tx, err := s.db.Begin(true)
+
+	if err != nil {
+
+		return id, err
+	}
+
+	defer tx.Rollback()
+
+	bucket, err := tx.CreateBucketIfNotExists([]byte(collName))
+
 	if err != nil {
 		return id, err
 	}
 
-	s.db.Update(func(tx *bbolt.Tx) error {
+	for k, v := range data {
 
-		for k, v := range data {
+		if err := bucket.Put([]byte(k), []byte(v)); err != nil {
 
-			if err := coll.Put([]byte(k), []byte(v)); err != nil {
-
-				return err
-
-			}
+			return id, err
 
 		}
 
-		if err := coll.Put([]byte("id"), []byte(id.String())); err != nil {
-			return err
-		}
+	}
 
-		return nil
-
-	})
+	if err := bucket.Put([]byte("id"), []byte(id.String())); err != nil {
+		return id, err
+	}
 
 	return id, nil
 
