@@ -28,14 +28,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// coll, err := db.CreateCollection("users")
-
-	// if err != nil {
-
-	// 	log.Fatal(err)
-
-	// }
-
 	fmt.Printf("%+v\n", id)
 
 }

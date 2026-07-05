@@ -47,10 +47,6 @@ func (s *Sprig) CreateCollection(name string) (*Collection, error) {
 
 	defer tx.Rollback()
 
-	// bucket := tx.Bucket([]byte(name))
-	// if bucket != nil {
-	// 	return &Collection{Bucket: bucket}, nil
-	// }
 	bucket, err := tx.CreateBucketIfNotExists([]byte(name))
 	if err != nil {
 		return nil, err
@@ -97,6 +93,4 @@ func (s *Sprig) Insert(collName string, data M) (uuid.UUID, error) {
 
 }
 
-func (s *Sprig) Select(coll string, k string, query any) {
-
-}
+func (s *Sprig) Select(coll string, k string, query any) {}
