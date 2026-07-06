@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Debjit28/sprig-db/sprig"
 	"github.com/labstack/echo/v4"
@@ -109,4 +110,73 @@ func (w *WebHandler) HandleCollectionPage(c echo.Context) error {
 		"PrevPage": page - 1,
 	}
 	return c.Render(http.StatusOK, "collection.html", data)
+}
+
+// HandleDashboardQuery handles queries from the Dashboard Console
+func (w *WebHandler) HandleDashboardQuery(c echo.Context) error {
+	lang := c.FormValue("language")
+	var result *sprig.QueryResult
+	var err error
+	var name string
+
+	if lang == "sql" {
+		q := strings.TrimSpace(c.FormValue("sql_query"))
+		if !strings.HasPrefix(strings.ToUpper(q), "SELECT * FROM") {
+			return c.Render(http.StatusOK, "query_result.html", map[string]any{"Error": "Only 'SELECT * FROM <table> [WHERE <k> = <v>]' is supported in this proxy demo."})
+		}
+		q = q[13:] // Strip "SELECT * FROM "
+		parts := strings.SplitN(q, "WHERE", 2)
+		name = strings.TrimSpace(parts[0])
+		
+		query := w.db.Coll(name)
+		if len(parts) > 1 {
+			whereClause := strings.TrimSpace(parts[1])
+			conds := strings.SplitN(whereClause, "=", 2)
+			if len(conds) == 2 {
+				k := strings.TrimSpace(conds[0])
+				v := strings.TrimSpace(conds[1])
+				v = strings.Trim(v, "'\" ") 
+				query = query.Eq(sprig.Map{k: v})
+			}
+		}
+		result, err = query.Limit(50).Find()
+	} else {
+		// NoSQL Mode
+		name = strings.TrimSpace(c.FormValue("collection"))
+		if name == "" {
+			return c.Render(http.StatusOK, "query_result.html", map[string]any{"Error": "Collection name is required in NoSQL mode."})
+		}
+		k := strings.TrimSpace(c.FormValue("filter_key"))
+		v := strings.TrimSpace(c.FormValue("filter_val"))
+		
+		query := w.db.Coll(name)
+		if k != "" && v != "" {
+			query = query.Eq(sprig.Map{k: v})
+		}
+		result, err = query.Limit(50).Find()
+	}
+
+	if err != nil {
+		return c.Render(http.StatusOK, "query_result.html", map[string]any{"Error": err.Error()})
+	}
+	if result == nil {
+		result = &sprig.QueryResult{Data: []sprig.Map{}, Total: 0}
+	}
+
+	keySet := map[string]bool{}
+	for _, doc := range result.Data {
+		for key := range doc {
+			keySet[key] = true
+		}
+	}
+	var keys []string
+	for key := range keySet {
+		keys = append(keys, key)
+	}
+
+	data := map[string]any{
+		"Result": result,
+		"Keys":   keys,
+	}
+	return c.Render(http.StatusOK, "query_result.html", data)
 }

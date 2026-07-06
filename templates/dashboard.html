@@ -43,6 +43,34 @@
       </div>
     </div>
 
+    <!-- Query Console -->
+    <div class="card" style="margin-bottom:28px;">
+      <h2 style="font-size:1.1rem; margin-bottom:12px;">🔍 Live Query Console</h2>
+      <form hx-post="/dashboard/query" hx-target="#query-results" hx-headers='js:{"Authorization": "Bearer " + localStorage.getItem("sprig_token")}'>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+          <select name="language" class="form-input" style="width:150px; background:var(--bg-lighter);" onchange="toggleQueryMode(this.value)">
+            <option value="sql">SQL Mode</option>
+            <option value="nosql">NoSQL Mode</option>
+          </select>
+        </div>
+        
+        <div id="sql-inputs">
+          <input type="text" name="sql_query" class="form-input" style="font-family:monospace; color:var(--accent);" placeholder="SELECT * FROM users WHERE role = 'admin'" value="SELECT * FROM users">
+        </div>
+        
+        <div id="nosql-inputs" style="display:none; gap:10px;">
+          <input type="text" name="collection" class="form-input" placeholder="Collection (e.g. users)">
+          <input type="text" name="filter_key" class="form-input" placeholder="Filter Key (optional)">
+          <input type="text" name="filter_val" class="form-input" placeholder="Filter Value (optional)">
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="margin-top:14px;">⚡ Execute Query</button>
+      </form>
+      
+      <!-- Where HTMX will swap the query results -->
+      <div id="query-results" style="margin-top:20px;"></div>
+    </div>
+
     <!-- Collections -->
     <h2 style="font-size:1.1rem; margin-bottom:16px; color:var(--text-secondary);">Collections</h2>
     {{if .Collections}}
@@ -94,6 +122,11 @@
       localStorage.removeItem('sprig_token');
       localStorage.removeItem('sprig_user');
       window.location.href = '/login';
+    }
+
+    function toggleQueryMode(mode) {
+      document.getElementById('sql-inputs').style.display = mode === 'sql' ? 'block' : 'none';
+      document.getElementById('nosql-inputs').style.display = mode === 'nosql' ? 'flex' : 'none';
     }
 
     function showCreateModal() { document.getElementById('create-modal').style.display = 'flex'; }

@@ -72,6 +72,7 @@ func main() {
 	e.GET("/login", web.HandleLoginPage)
 	e.GET("/dashboard", web.HandleDashboard)
 	e.GET("/collections/:name", web.HandleCollectionPage)
+	e.POST("/dashboard/query", web.HandleDashboardQuery)
 
 	// Public auth routes.
 	e.POST("/auth/register", auth.HandleRegister)

@@ -1,0 +1,29 @@
+{{define "query_result.html"}}
+{{if .Error}}
+<div style="padding:12px; background:var(--danger-bg); color:var(--danger); border-radius:6px;">
+  <strong>Error:</strong> {{.Error}}
+</div>
+{{else}}
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+      {{range .Keys}}<th>{{.}}</th>{{end}}
+      </tr>
+    </thead>
+    <tbody>
+      {{$keys := .Keys}}
+      {{range .Result.Data}}
+      {{$doc := .}}
+      <tr>
+        {{range $keys}}<td class="json-cell">{{index $doc .}}</td>{{end}}
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  <div style="margin-top:10px; font-size:0.85rem; color:var(--text-muted);">
+    Returned {{len .Result.Data}} rows.
+  </div>
+</div>
+{{end}}
+{{end}}
