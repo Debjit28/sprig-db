@@ -1,0 +1,184 @@
+{{define "collection.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprig-DB — {{.Name}}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="/dashboard" class="navbar-brand">
+        <span class="icon">🌱</span> Sprig-DB
+      </a>
+      <div class="navbar-nav">
+        <a href="/dashboard" class="btn btn-ghost btn-sm">← Dashboard</a>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">📁 {{.Name}}</h1>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px;">{{.Result.Total}} documents</p>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" onclick="showInsertModal()">+ Insert Document</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAll()">🗑 Delete All</button>
+      </div>
+    </div>
+
+    <!-- Documents Table -->
+    {{if .Result.Data}}
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            {{range .Keys}}
+            <th>{{.}}</th>
+            {{end}}
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="docs-table">
+          {{$keys := .Keys}}
+          {{$name := .Name}}
+          {{range .Result.Data}}
+          {{$doc := .}}
+          <tr>
+            {{range $keys}}
+            <td class="json-cell">{{index $doc .}}</td>
+            {{end}}
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="deleteDoc('{{$name}}', {{index $doc "id"}})">Delete</button>
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {{if gt .Result.Total 50}}
+    <div class="pagination">
+      <span class="pagination-info">Showing {{len .Result.Data}} of {{.Result.Total}}</span>
+    </div>
+    {{end}}
+    {{else}}
+    <div class="card">
+      <div class="empty-state">
+        <span class="icon">📄</span>
+        <p>No documents in this collection yet.</p>
+      </div>
+    </div>
+    {{end}}
+  </div>
+
+  <!-- Insert Modal -->
+  <div id="insert-modal" class="modal-backdrop" style="display:none;" onclick="if(event.target===this)hideInsertModal()">
+    <div class="modal">
+      <div class="modal-title">Insert Document</div>
+      <form onsubmit="insertDoc(event)">
+        <div class="form-group">
+          <label class="form-label" for="doc-json">JSON Document</label>
+          <textarea class="form-textarea" id="doc-json" required placeholder='{"name": "Alice", "email": "alice@example.com"}'></textarea>
+        </div>
+        <div id="insert-error" style="display:none; padding:8px; border-radius:6px; background:var(--danger-bg); color:var(--danger); font-size:0.8rem; margin-bottom:12px;"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="hideInsertModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Insert</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" style="display:none;"></div>
+
+  <script>
+    const token = localStorage.getItem('sprig_token');
+    if (!token) window.location.href = '/login';
+    const collName = '{{.Name}}';
+
+    function logout() {
+      localStorage.removeItem('sprig_token');
+      localStorage.removeItem('sprig_user');
+      window.location.href = '/login';
+    }
+
+    function showInsertModal() { document.getElementById('insert-modal').style.display = 'flex'; }
+    function hideInsertModal() {
+      document.getElementById('insert-modal').style.display = 'none';
+      document.getElementById('insert-error').style.display = 'none';
+    }
+
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast toast-' + type;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
+
+    async function insertDoc(e) {
+      e.preventDefault();
+      const jsonStr = document.getElementById('doc-json').value;
+      try {
+        JSON.parse(jsonStr);
+      } catch {
+        const el = document.getElementById('insert-error');
+        el.textContent = 'Invalid JSON format';
+        el.style.display = 'block';
+        return;
+      }
+      const res = await fetch('/api/' + collName, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+        body: jsonStr
+      });
+      if (res.ok) {
+        showToast('Document inserted!', 'success');
+        hideInsertModal();
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Insert failed', 'error');
+      }
+    }
+
+    async function deleteDoc(coll, id) {
+      if (!confirm('Delete this document?')) return;
+      const res = await fetch('/api/' + coll + '?eq.id=' + id, {
+        method: 'DELETE',
+        headers: {'Authorization': 'Bearer ' + token}
+      });
+      if (res.ok) {
+        showToast('Document deleted', 'success');
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        showToast('Delete failed', 'error');
+      }
+    }
+
+    async function deleteAll() {
+      if (!confirm('Delete ALL documents in ' + collName + '? This cannot be undone.')) return;
+      const res = await fetch('/api/' + collName, {
+        method: 'DELETE',
+        headers: {'Authorization': 'Bearer ' + token}
+      });
+      if (res.ok) {
+        showToast('All documents deleted', 'success');
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        showToast('Delete failed', 'error');
+      }
+    }
+  </script>
+</body>
+</html>
+{{end}}

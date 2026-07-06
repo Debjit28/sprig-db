@@ -1,0 +1,120 @@
+{{define "login.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprig-DB — Login</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <div class="login-container">
+    <div class="card login-card">
+      <div class="login-header">
+        <span class="icon">🌱</span>
+        <h1>Sprig-DB</h1>
+        <p>Enterprise Document Database</p>
+      </div>
+
+      <div id="auth-form">
+        <!-- Login Form -->
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input class="form-input" type="text" id="username" name="username" required autocomplete="username" placeholder="Enter your username">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <input class="form-input" type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
+          </div>
+          <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center;">
+            Sign In
+          </button>
+        </form>
+
+        <div class="login-toggle">
+          Don't have an account?
+          <a onclick="toggleForm()">Create one</a>
+        </div>
+      </div>
+
+      <div id="register-form" style="display:none;">
+        <form onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label class="form-label" for="reg-username">Username</label>
+            <input class="form-input" type="text" id="reg-username" name="username" required placeholder="Choose a username">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-password">Password</label>
+            <input class="form-input" type="password" id="reg-password" name="password" required placeholder="Choose a password">
+          </div>
+          <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center;">
+            Create Account
+          </button>
+        </form>
+        <div class="login-toggle">
+          Already have an account?
+          <a onclick="toggleForm()">Sign in</a>
+        </div>
+      </div>
+
+      <div id="auth-error" style="display:none; margin-top:16px; padding:10px; border-radius:8px; background:var(--danger-bg); color:var(--danger); font-size:0.85rem; text-align:center;"></div>
+    </div>
+  </div>
+
+  <script>
+    function toggleForm() {
+      const login = document.getElementById('auth-form');
+      const reg = document.getElementById('register-form');
+      login.style.display = login.style.display === 'none' ? '' : 'none';
+      reg.style.display = reg.style.display === 'none' ? '' : 'none';
+      document.getElementById('auth-error').style.display = 'none';
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('auth-error');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({username, password})
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.error); return; }
+        localStorage.setItem('sprig_token', data.token);
+        localStorage.setItem('sprig_user', data.username);
+        window.location.href = '/dashboard';
+      } catch(err) { showError('Connection failed'); }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const username = document.getElementById('reg-username').value;
+      const password = document.getElementById('reg-password').value;
+      try {
+        const res = await fetch('/auth/register', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({username, password})
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.error); return; }
+        // Auto-login after register
+        await handleLogin(new Event('submit'));
+        document.getElementById('username').value = username;
+        document.getElementById('password').value = password;
+      } catch(err) { showError('Connection failed'); }
+    }
+  </script>
+</body>
+</html>
+{{end}}

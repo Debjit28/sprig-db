@@ -14,6 +14,14 @@ const (
 
 type Map map[string]any
 
+// QueryResult holds paginated query results.
+type QueryResult struct {
+	Data   []Map `json:"data"`
+	Total  int   `json:"total"`
+	Offset int   `json:"offset"`
+	Limit  int   `json:"limit"`
+}
+
 type Sprig struct {
 	currentDatabase string
 	*Options
@@ -41,25 +49,52 @@ func New(options ...OptFunc) (*Sprig, error) {
 	}, nil
 }
 
+// Close cleanly closes the underlying bbolt database.
+func (h *Sprig) Close() error {
+	if h.db != nil {
+		return h.db.Close()
+	}
+	return nil
+}
+
 func (h *Sprig) DropDatabase(name string) error {
+	if h.db != nil {
+		h.db.Close()
+	}
 	dbname := fmt.Sprintf("%s.%s", name, ext)
 	return os.Remove(dbname)
 }
 
-func (h *Sprig) CreateCollection(name string) (*bbolt.Bucket, error) {
+func (h *Sprig) CreateCollection(name string) error {
 	tx, err := h.db.Begin(true)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer tx.Rollback()
 
-	bucket, err := tx.CreateBucketIfNotExists([]byte(name))
+	_, err = tx.CreateBucketIfNotExists([]byte(name))
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return bucket, err
+	return tx.Commit()
 }
 
 func (h *Sprig) Coll(name string) *Filter {
 	return NewFilter(h, name)
+}
+
+// ListCollections returns the names of all collections (top-level buckets).
+func (h *Sprig) ListCollections() ([]string, error) {
+	var names []string
+	err := h.db.View(func(tx *bbolt.Tx) error {
+		return tx.ForEach(func(name []byte, _ *bbolt.Bucket) error {
+			n := string(name)
+			// Skip internal buckets (indexes, users)
+			if len(n) > 0 && n[0] != '_' {
+				names = append(names, n)
+			}
+			return nil
+		})
+	})
+	return names, err
 }
