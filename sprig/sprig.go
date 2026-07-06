@@ -2,95 +2,64 @@ package sprig
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 )
 
 const (
-	defaultDBName = "admin"
+	defaultDBName = "default"
+	ext           = "sprig"
 )
 
-type M map[string]string
+type Map map[string]any
 
 type Sprig struct {
+	currentDatabase string
+	*Options
 	db *bbolt.DB
 }
 
-type Collection struct {
-	*bbolt.Bucket
-}
-
-func New() (*Sprig, error) {
-
-	dbname := fmt.Sprintf("%s.sprig", defaultDBName)
-
+func New(options ...OptFunc) (*Sprig, error) {
+	opts := &Options{
+		Encoder: JSONEncoder{},
+		Decoder: JSONDecoder{},
+		DBName:  defaultDBName,
+	}
+	for _, fn := range options {
+		fn(opts)
+	}
+	dbname := fmt.Sprintf("%s.%s", opts.DBName, ext)
 	db, err := bbolt.Open(dbname, 0666, nil)
-
 	if err != nil {
 		return nil, err
 	}
-
 	return &Sprig{
-		db: db,
+		currentDatabase: dbname,
+		db:              db,
+		Options:         opts,
 	}, nil
-
 }
 
-func (s *Sprig) CreateCollection(name string) (*Collection, error) {
+func (h *Sprig) DropDatabase(name string) error {
+	dbname := fmt.Sprintf("%s.%s", name, ext)
+	return os.Remove(dbname)
+}
 
-	tx, err := s.db.Begin(true)
-
+func (h *Sprig) CreateCollection(name string) (*bbolt.Bucket, error) {
+	tx, err := h.db.Begin(true)
 	if err != nil {
 		return nil, err
 	}
-
 	defer tx.Rollback()
 
 	bucket, err := tx.CreateBucketIfNotExists([]byte(name))
 	if err != nil {
 		return nil, err
 	}
-
-	return &Collection{Bucket: bucket}, nil
-
+	return bucket, err
 }
 
-func (s *Sprig) Insert(collName string, data M) (uuid.UUID, error) {
-
-	id := uuid.New()
-
-	tx, err := s.db.Begin(true)
-
-	if err != nil {
-
-		return id, err
-	}
-
-	defer tx.Rollback()
-
-	bucket, err := tx.CreateBucketIfNotExists([]byte(collName))
-
-	if err != nil {
-		return id, err
-	}
-
-	for k, v := range data {
-
-		if err := bucket.Put([]byte(k), []byte(v)); err != nil {
-
-			return id, err
-
-		}
-
-	}
-
-	if err := bucket.Put([]byte("id"), []byte(id.String())); err != nil {
-		return id, err
-	}
-
-	return id, nil
-
+func (h *Sprig) Coll(name string) *Filter {
+	return NewFilter(h, name)
 }
-
-func (s *Sprig) Select(coll string, k string, query any) {}
