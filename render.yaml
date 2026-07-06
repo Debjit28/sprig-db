@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: sprig-db
+    env: go
+    plan: free
+    buildCommand: go build -o bin/sprig-db ./cmd/main.go
+    startCommand: ./bin/sprig-db
+    envVars:
+      - key: SPRIG_JWT_SECRET
+        generateValue: true
