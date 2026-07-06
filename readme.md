@@ -9,16 +9,21 @@
 ## ✨ Features
 
 - **Embedded Engine**: Powered by `bbolt`, giving fast and ACID-compliant storage.
+- **Enterprise Security**: Built-in JWT Authentication to secure endpoints out-of-the-box.
+- **Admin Dashboard**: A stunning, responsive Dark-Mode Glassmorphism dashboard powered by **HTMX**. Data tables feature built-in pagination.
 - **Collections Pattern**: Group your documents easily without manual bucket management.
 - **REST API Out-of-the-box**: Comes with an embedded API server powered by Echo to easily read/write data.
+- **High Performance Benchmark Tested**: Battle-tested load scripts demonstrating scale.
 
 ## 🏗️ Architecture
 
 ```text
 .
-├── api/                # Production web/RPC endpoints and routes (Echo Server)
-├── cmd/                # Entrypoints for binary builds and CLI execution
+├── api/                # Production web endpoints, HTMX handlers, and JWT Auth (Echo Server)
+├── cmd/                # Entrypoints for binary builds, main server, and CLI loadtester
 ├── sprig/              # Core Database Package (Collections, Filters, DB abstraction)
+├── templates/          # HTML templates powering the HTMX admin dashboard
+├── static/             # Static CSS and styling for the dashboard
 ├── Makefile            # Build, test, and formatting automation toolchain
 ├── go.mod              # Package dependencies
 └── readme.md           # You are here!
@@ -37,15 +42,23 @@ make build
 make run
 ```
 
-### 2. Run Tests
-You can run the core package tests using simply:
+### 2. Run Tests & Benchmarks
+You can run the core package tests and storage endurance benchmarks using simply:
 ```bash
 make test
 ```
 
+### 3. Run Throughput Load tester
+To test API capability and concurrent user scaling, you can run the massive multithreaded HTTP benchmark script against the running server.
+```bash
+make loadtest
+```
+
 ## 🌐 HTTP API Usage
 
-When running the API server (`make run`), Sprig-DB exposes an HTTP API for easy document storage and querying out of the box.
+When running the API server (`make run`), Sprig-DB exposes an HTTP API for document storage and queries. The dashboard is accessible at **`http://localhost:7777/dashboard`**.
+
+*Note: The API and Dashboard are secured by JWT Authentication. You must first register and login via `POST /auth/register` and `POST /auth/login` to obtain your Bearer token or cookie.*
 
 ### `POST /api/:collection_name` - Insert Document
 
@@ -105,7 +118,6 @@ func main() {
 
 As this is a lightweight learning project, there are currently a few limitations:
 - **Query Capabilities**: Only simple equality (`eq`) filters are supported. No complex nested query operations (`$gt`, `$lt`, OR/AND chaining).
-- **Security**: No built-in user authentication, role-based access control, or web API security.
 - **Relational Integrity**: As a document NoSQL store, there is no automatic enforcement of foreign-key relationships.
 - **Transactions**: While boltdb provides ACID properties, Sprig's API doesn't currently easily expose multi-document/cross-collection transactional grouping.
 
