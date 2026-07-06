@@ -55,7 +55,7 @@
             <td class="json-cell">{{index $doc .}}</td>
             {{end}}
             <td>
-              <button class="btn btn-danger btn-sm" onclick="deleteDoc('{{$name}}', {{index $doc "id"}})">Delete</button>
+              <button class="btn btn-danger btn-sm" data-coll="{{$name}}" data-id='{{index $doc "id"}}' onclick="deleteDoc(this.dataset.coll, this.dataset.id)">Delete</button>
             </td>
           </tr>
           {{end}}
@@ -80,7 +80,7 @@
   </div>
 
   <!-- Insert Modal -->
-  <div id="insert-modal" class="modal-backdrop" style="display:none;" onclick="if(event.target===this)hideInsertModal()">
+  <div id="insert-modal" class="modal-backdrop" style="display:none;" onclick="if(event.target===this) { hideInsertModal(); }">
     <div class="modal">
       <div class="modal-title">Insert Document</div>
       <form onsubmit="insertDoc(event)">
