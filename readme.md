@@ -70,6 +70,16 @@ curl "http://localhost:7777/api/users?eq.username=johndoe"
 # [{"id": 1, "username": "johndoe", "email": "john@example.com", "age": 30}]
 ```
 
+### `demo.sh` - Auto-populate Collections
+
+You can run the included `demo.sh` script to quickly populate the database with dummy data across multiple collections (`users`, `products`, and `orders`).
+
+**Usage**:
+```bash
+chmod +x demo.sh
+./demo.sh
+```
+
 ## 🛠️ Embedding Sprig Programmatically
 
 You can also bypass the API layer and embed Sprig directly into your own Go applications as a lightweight store.
@@ -90,6 +100,15 @@ func main() {
     results, _ := db.Coll("users").Eq(sprig.Map{"name": "Alice"}).Find()
 }
 ```
+
+## ⚠️ Limitations
+
+As this is a lightweight learning project, there are currently a few limitations:
+- **Query Capabilities**: Only simple equality (`eq`) filters are supported. No complex nested query operations (`$gt`, `$lt`, OR/AND chaining).
+- **Security**: No built-in user authentication, role-based access control, or web API security.
+- **Relational Integrity**: As a document NoSQL store, there is no automatic enforcement of foreign-key relationships.
+- **Transactions**: While boltdb provides ACID properties, Sprig's API doesn't currently easily expose multi-document/cross-collection transactional grouping.
+
 ## 🙌 Acknowledgments
 
 This project builds upon great learning resources within the Go community:
