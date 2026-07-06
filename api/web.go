@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/Debjit28/sprig-db/sprig"
 	"github.com/labstack/echo/v4"
@@ -69,7 +70,15 @@ func (w *WebHandler) HandleDashboard(c echo.Context) error {
 // HandleCollectionPage renders a specific collection's documents.
 func (w *WebHandler) HandleCollectionPage(c echo.Context) error {
 	name := c.Param("name")
-	result, err := w.db.Coll(name).Limit(50).Find()
+	
+	page := 1
+	if p, err := strconv.Atoi(c.QueryParam("page")); err == nil && p > 0 {
+		page = p
+	}
+	limit := 50
+	offset := (page - 1) * limit
+
+	result, err := w.db.Coll(name).Offset(offset).Limit(limit).Find()
 	if err != nil {
 		result = &sprig.QueryResult{Data: []sprig.Map{}, Total: 0}
 	}
@@ -86,10 +95,18 @@ func (w *WebHandler) HandleCollectionPage(c echo.Context) error {
 		keys = append(keys, k)
 	}
 
+	hasNext := result.Total > offset+limit
+	hasPrev := page > 1
+
 	data := map[string]any{
 		"Name":    name,
 		"Result":  result,
 		"Keys":    keys,
+		"Page":    page,
+		"HasNext": hasNext,
+		"HasPrev": hasPrev,
+		"NextPage": page + 1,
+		"PrevPage": page - 1,
 	}
 	return c.Render(http.StatusOK, "collection.html", data)
 }
