@@ -1,128 +1,112 @@
 <div align="center">
   <h1>🌱 Sprig-DB</h1>
-  <p><strong>An ultra-lightweight, embedded document database driven by bbolt.</strong></p>
-  
-  <p>
-    <a href="https://github.com/Debjit28/sprig-db/actions"><img src="https://img.shields.io/github/actions/workflow/status/Debjit28/sprig-db/ci.yml?branch=main" alt="Build Status"></a>
-    <a href="https://golang.org/doc/devel/release.html"><img src="https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go" alt="Go Version"></a>
-    <a href="https://github.com/Debjit28/sprig-db/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
-  </p>
+  <p><strong>Ultra-lightweight, embedded key-value document database</strong></p>
+  <p>Built on top of <b>bbolt</b>, Sprig-DB provides abstraction layers for collections, schemas, and indexing with a zero-configuration persistence model and a built-in REST API.</p>
 </div>
 
 ---
 
-Sprig-DB is a self-contained, ACID-compliant database designed for Go applications. It gives you the speed and reliability of `bbolt` combined with the ease-of-use of a MongoDB-like document store. It ships with a fully functional REST API, JWT authentication, and a built-in HTMX Admin Dashboard.
-
 ## ✨ Features
 
-- **Embedded Engine**: Powered by `bbolt` for lightning-fast, zero-configuration file-based persistence.
-- **Collections Pattern**: Easily group documents into distinct collections dynamically.
-- **REST API Out-of-the-Box**: Embedded HTTP Server (via Echo) exposing fully validated CRUD endpoints.
-- **JWT Authentication**: Full built-in security for your API endpoints.
-- **HTMX Admin Panel**: Beautiful Glassmorphism dark-mode UI for managing your database directly from your browser.
-- **Secondary Indexing**: Automatically indexes documents for rapid querying.
-- **Pagination & Optimization**: Safely handle massive datasets with `Limit` and `Offset`.
+- **Embedded Engine**: Powered by `bbolt`, giving fast and ACID-compliant storage.
+- **Collections Pattern**: Group your documents easily without manual bucket management.
+- **REST API Out-of-the-box**: Comes with an embedded API server powered by Echo to easily read/write data.
+
+## 🏗️ Architecture
+
+```text
+.
+├── api/                # Production web/RPC endpoints and routes (Echo Server)
+├── cmd/                # Entrypoints for binary builds and CLI execution
+├── sprig/              # Core Database Package (Collections, Filters, DB abstraction)
+├── Makefile            # Build, test, and formatting automation toolchain
+├── go.mod              # Package dependencies
+└── readme.md           # You are here!
+```
 
 ## 🚀 Quick Start
 
 ### 1. Build & Run the API Server
-Sprig-DB includes a `Makefile` to streamline the build and run process.
+Sprig-DB includes a Makefile to streamline the build and run process.
 
 ```bash
 # Build the binary
 make build
 
-# Start the Sprig-DB Server (defaults to port :7777)
+# Build and run the HTTP API Server (runs on port :7777 by default)
 make run
 ```
 
-### 2. Access the Dashboard
-Once the server is running, navigate your browser to `http://localhost:7777`. 
-
-*On your first visit, click **"Create one"** on the login screen to register your initial Admin account.*
-
-### 3. Run Tests
+### 2. Run Tests
 You can run the core package tests using simply:
 ```bash
 make test
 ```
 
-## 🌐 Interacting with the API
+## 🌐 HTTP API Usage
 
-Sprig-DB exposes a fully secured HTTP API. Here is how you can interact with it using `curl`.
+When running the API server (`make run`), Sprig-DB exposes an HTTP API for easy document storage and querying out of the box.
 
-### Obtain an Auth Token
-```bash
-curl -X POST http://localhost:7777/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "yourpassword"}'
-```
+### `POST /api/:collection_name` - Insert Document
 
-### Insert a Document
+**Usage**:
 ```bash
 curl -X POST http://localhost:7777/api/users \
-  -H "Authorization: Bearer <YOUR_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"username": "johndoe", "email": "john@example.com", "age": 30}'
 
 # Returns: {"id": 1}
 ```
 
-### Query Documents
-Filter documents by providing query parameters with the format `?{FilterType}.{field}={value}`. Right now, `eq` (equals) is supported.
+### `GET /api/:collection_name` - Query Documents
 
+You can filter documents by providing query parameters with the format `?{FilterType}.{field}={value}`. Right now `eq` (equals) filter type is supported.
+
+**Usage**:
 ```bash
-curl -X GET "http://localhost:7777/api/users?eq.username=johndoe" \
-  -H "Authorization: Bearer <YOUR_TOKEN>"
+curl "http://localhost:7777/api/users?eq.username=johndoe"
+
+# Returns list of records matching the condition
+# [{"id": 1, "username": "johndoe", "email": "john@example.com", "age": 30}]
 ```
 
-## 🛠️ Embedding Programmatically
+## 🛠️ Embedding Sprig Programmatically
 
-Bypass the API layer entirely and embed Sprig directly into your Go binaries.
-
+You can also bypass the API layer and embed Sprig directly into your own Go applications as a lightweight store.
 ```go
 import "github.com/Debjit28/sprig-db/sprig"
 
 func main() {
-    // 1. Initialize DB
-    db, err := sprig.New(sprig.WithDBName("production"))
+    // Initialize DB
+    db, err := sprig.New()
     if err != nil {
         panic(err)
     }
-    defer db.Close()
     
-    // 2. Insert document
-    id, _ := db.Coll("customers").Insert(sprig.Map{"name": "Alice"})
+    // Insert document
+    id, _ := db.Coll("users").Insert(sprig.Map{"name": "Alice"})
     
-    // 3. Query document
-    results, _ := db.Coll("customers").Eq(sprig.Map{"name": "Alice"}).Find()
+    // Query document
+    results, _ := db.Coll("users").Eq(sprig.Map{"name": "Alice"}).Find()
 }
 ```
+## 🙌 Acknowledgments
 
-## 🏗️ Architecture
-
-```text
-.
-├── api/                # Production web routines, Echo Server, JWT Middleware
-├── cmd/                # Entrypoint for the binary build
-├── sprig/              # Core Database Package (Collections, bbolt Engine, Indexes)
-├── static/             # CSS Design System
-├── templates/          # HTML/HTMX admin frontend files
-├── Makefile            # Build, test, and formatting automation toolchain
-```
-
-## 🤝 Contributing
-
-Contributions are always welcome! Whether it's reporting a bug, discussing improvements, or submitting a Pull Request, your input helps make Sprig-DB better.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-Please ensure you run `make test` and add tests for any new behavior before submitting a PR!
+This project builds upon great learning resources within the Go community:
+- The base structure was inspired by [anthdm/hopper](https://github.com/anthdm/hopper).
+- Key underlying database concepts were learned from the [Database Internals PDF](https://github.com/arpitn30/EBooks/blob/master/Database%20Internals.pdf).
 
 ## 📜 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the MIT License.
+
+### Contributions
+
+This repository is primarily a personal/student learning project.
+
+Please don't open pull requests or contribute code. The goal is to build and maintain everything myself as part of the learning process.
+
+Feel free to:
+- ⭐ Star the repository if you find it interesting.
+- 🐛 Open an issue if you discover a bug.
+- 💡 Share suggestions or ideas in the Issues section.
