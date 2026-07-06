@@ -197,3 +197,39 @@ func TestListCollections(t *testing.T) {
 		t.Fatalf("expected 2 collections got %d", len(collections))
 	}
 }
+
+func BenchmarkInsertMassive(b *testing.B) {
+	db, err := New(WithDBName("test_bench_insert"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer db.DropDatabase("test_bench_insert")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := db.Coll("test_bench_coll").Insert(Map{"index": i, "payload": "this is a test payload for benchmarking the storage capabilities of sprig-db"})
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkFindMassive(b *testing.B) {
+	db, err := New(WithDBName("test_bench_find"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer db.DropDatabase("test_bench_find")
+
+	for i := 0; i < 100; i++ {
+		db.Coll("test_bench_coll").Insert(Map{"index": i, "username": "benchmark_user"})
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := db.Coll("test_bench_coll").Eq(Map{"username": "benchmark_user"}).Find()
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
