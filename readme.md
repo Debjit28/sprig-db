@@ -118,7 +118,7 @@ func main() {
 
 As this is a lightweight learning project, there are currently a few limitations:
 - **Query Capabilities**: Only simple equality (`eq`) filters are supported. No complex nested query operations (`$gt`, `$lt`, OR/AND chaining).
-- **Relational Integrity**: As a document NoSQL store, there is no automatic enforcement of foreign-key relationships.
+- **Relational Integrity**: As a document NoSQL store, foreign-key relationships must be enforced at the application layer. (See `examples/relational_embedding/main.go` for how to implement relational joins natively).
 - **Transactions**: While boltdb provides ACID properties, Sprig's API doesn't currently easily expose multi-document/cross-collection transactional grouping.
 
 ## 🙌 Acknowledgments
