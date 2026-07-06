@@ -1,2 +1,22 @@
-bin
-.db
+# Binaries and compiled files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+build/
+
+# IDEs
+.idea/
+.vscode/
+
+# Project specific DB files
+*.sprig
+
+# Go test outputs
+*.test
+coverage.out
+
+# MacOS
+.DS_Store
