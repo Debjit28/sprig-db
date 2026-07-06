@@ -57,7 +57,7 @@ make loadtest
 
 ## 🌐 HTTP API Usage
 
-When running the API server (`make run`), Sprig-DB exposes an HTTP API for document storage and queries. The dashboard is accessible at **`http://localhost:7777/dashboard`**.
+When running the API server (`make run`), Sprig-DB exposes an HTTP API for document storage and queries. The dashboard is accessible at **`https://sprig-db.onrender.com`**.
 
 *Note: The API and Dashboard are secured by JWT Authentication. You must first register and login via `POST /auth/register` and `POST /auth/login` to obtain your Bearer token or cookie.*
 
