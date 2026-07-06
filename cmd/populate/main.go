@@ -6,10 +6,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
 var token string
+var failed int32
+var success int32
 
 func initAuth() {
 	payload := []byte(`{"username":"admin_populator", "password":"password123"}`)
@@ -25,61 +29,73 @@ func initAuth() {
 	token = data["token"].(string)
 }
 
-func insertDoc(collection string, payload []byte) {
-	req, err := http.NewRequest("POST", "http://localhost:7777/api/"+collection, bytes.NewBuffer(payload))
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+func massiveInsert(collection string, count int) {
+	fmt.Printf("📦 Inserting %d documents into %s (Please wait ~60s)...\n", count, collection)
 
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
-	if err == nil {
-		resp.Body.Close()
-		fmt.Printf("Inserted into %s\n", collection)
-	} else {
-		fmt.Println("Failed to insert:", err)
+	workers := 100
+	reqsPerWorker := count / workers
+	var wg sync.WaitGroup
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			
+			t := http.DefaultTransport.(*http.Transport).Clone()
+			t.MaxIdleConns = 100
+			t.MaxConnsPerHost = 100
+			client := &http.Client{Timeout: 15 * time.Second, Transport: t}
+
+			for j := 0; j < reqsPerWorker; j++ {
+				idx := (workerID * reqsPerWorker) + j
+				
+				// Format payload to make it unique and filterable
+				var finalPayload []byte
+				if collection == "users" {
+					role := "customer"
+					if idx%10 == 0 { role = "admin" }
+					finalPayload = []byte(fmt.Sprintf(`{"name": "User%d", "role": "%s", "active": "true"}`, idx, role))
+				} else if collection == "products" {
+					category := "Electronics"
+					if idx%5 == 0 { category = "Furniture" }
+					finalPayload = []byte(fmt.Sprintf(`{"product": "Item%d", "price": %.2f, "category": "%s"}`, idx, float64(idx)*1.5, category))
+				} else {
+					status := "processing"
+					if idx%3 == 0 { status = "shipped" }
+					finalPayload = []byte(fmt.Sprintf(`{"order_id": "ORD-%d", "status": "%s"}`, idx, status))
+				}
+
+				req, _ := http.NewRequest("POST", "http://localhost:7777/api/"+collection, bytes.NewBuffer(finalPayload))
+				req.Header.Set("Content-Type", "application/json")
+				req.Header.Set("Authorization", "Bearer "+token)
+
+				resp, err := client.Do(req)
+				if err != nil {
+					atomic.AddInt32(&failed, 1)
+					continue
+				}
+				resp.Body.Close()
+				if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+					atomic.AddInt32(&success, 1)
+				} else {
+					atomic.AddInt32(&failed, 1)
+				}
+			}
+		}(i)
 	}
+	wg.Wait()
 }
 
 func main() {
 	fmt.Println("🚀 Getting Authenticated to Sprig-DB...")
 	initAuth()
 
-	fmt.Println("📦 Populating Users collection...")
-	users := []string{
-		`{"name": "Alice Smith", "email": "alice@example.com", "role": "admin", "joined": "2024-01-15"}`,
-		`{"name": "Bob Jones", "email": "bob@example.com", "role": "customer", "joined": "2024-03-22"}`,
-		`{"name": "Charlie Adams", "email": "charlie@example.com", "role": "customer", "joined": "2024-05-10"}`,
-		`{"name": "Diana Prince", "email": "diana@example.com", "role": "vendor", "joined": "2023-11-05"}`,
-	}
-	for _, u := range users {
-		insertDoc("users", []byte(u))
-	}
+	start := time.Now()
+	// Total exactly 31,000 docs
+	massiveInsert("users", 10000)
+	massiveInsert("products", 10000)
+	massiveInsert("orders", 11000)
 
-	fmt.Println("🛒 Populating Products collection...")
-	products := []string{
-		`{"name": "Wireless Headphones", "price": 120.50, "category": "Electronics", "in_stock": true}`,
-		`{"name": "Mechanical Keyboard", "price": 99.99, "category": "Electronics", "in_stock": true}`,
-		`{"name": "Ergonomic Desk Chair", "price": 250.00, "category": "Furniture", "in_stock": false}`,
-		`{"name": "Coffee Beans (1kg)", "price": 24.99, "category": "Groceries", "in_stock": true}`,
-		`{"name": "Yoga Mat", "price": 35.00, "category": "Fitness", "in_stock": true}`,
-	}
-	for _, p := range products {
-		insertDoc("products", []byte(p))
-	}
-
-	fmt.Println("💳 Populating Orders collection...")
-	orders := []string{
-		`{"user_email": "bob@example.com", "product_name": "Mechanical Keyboard", "total": 99.99, "status": "shipped"}`,
-		`{"user_email": "charlie@example.com", "product_name": "Coffee Beans (1kg)", "total": 24.99, "status": "processing"}`,
-		`{"user_email": "alice@example.com", "product_name": "Ergonomic Desk Chair", "total": 250.00, "status": "delivered"}`,
-	}
-	for _, o := range orders {
-		insertDoc("orders", []byte(o))
-	}
-
-	fmt.Println("✅ Sensible data population complete!")
+	fmt.Printf("\n✅ Sensible 31k data population complete in %v!\n", time.Since(start))
+	fmt.Printf("Total Success: %d | Total Failed: %d\n", success, failed)
 }

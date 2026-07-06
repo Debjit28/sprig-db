@@ -3,6 +3,7 @@ package sprig
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"go.etcd.io/bbolt"
 )
@@ -23,6 +24,7 @@ type QueryResult struct {
 }
 
 type Sprig struct {
+	mu              sync.RWMutex
 	currentDatabase string
 	*Options
 	db *bbolt.DB
@@ -51,6 +53,8 @@ func New(options ...OptFunc) (*Sprig, error) {
 
 // Close cleanly closes the underlying bbolt database.
 func (h *Sprig) Close() error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	if h.db != nil {
 		return h.db.Close()
 	}
@@ -58,6 +62,8 @@ func (h *Sprig) Close() error {
 }
 
 func (h *Sprig) DropDatabase(name string) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	if h.db != nil {
 		h.db.Close()
 	}
@@ -66,6 +72,9 @@ func (h *Sprig) DropDatabase(name string) error {
 }
 
 func (h *Sprig) CreateCollection(name string) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	tx, err := h.db.Begin(true)
 	if err != nil {
 		return err
@@ -85,6 +94,9 @@ func (h *Sprig) Coll(name string) *Filter {
 
 // ListCollections returns the names of all collections (top-level buckets).
 func (h *Sprig) ListCollections() ([]string, error) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
 	var names []string
 	err := h.db.View(func(tx *bbolt.Tx) error {
 		return tx.ForEach(func(name []byte, _ *bbolt.Bucket) error {
@@ -98,3 +110,4 @@ func (h *Sprig) ListCollections() ([]string, error) {
 	})
 	return names, err
 }
+

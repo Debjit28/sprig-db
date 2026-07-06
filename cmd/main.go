@@ -70,9 +70,13 @@ func main() {
 	// Web routes (HTML pages).
 	e.GET("/", func(c echo.Context) error { return c.Redirect(http.StatusFound, "/login") })
 	e.GET("/login", web.HandleLoginPage)
-	e.GET("/dashboard", web.HandleDashboard)
-	e.GET("/collections/:name", web.HandleCollectionPage)
-	e.POST("/dashboard/query", web.HandleDashboardQuery)
+
+	// Protected web routes (dashboard requires login via cookie or header).
+	webGroup := e.Group("")
+	webGroup.Use(api.CookieOrJWTMiddleware)
+	webGroup.GET("/dashboard", web.HandleDashboard)
+	webGroup.GET("/collections/:name", web.HandleCollectionPage)
+	webGroup.POST("/dashboard/query", web.HandleDashboardQuery)
 
 	// Public auth routes.
 	e.POST("/auth/register", auth.HandleRegister)

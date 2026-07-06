@@ -1,6 +1,7 @@
 package sprig
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -40,7 +41,7 @@ func TestUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 	values := Map{"name": "bar"}
-	results, err := db.Coll("users").Update(values)
+	results, err := db.Coll("users").Eq(Map{"name": "foo"}).Update(values)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,6 +198,219 @@ func TestListCollections(t *testing.T) {
 		t.Fatalf("expected 2 collections got %d", len(collections))
 	}
 }
+
+// --- New tests for the fixes ---
+
+func TestIndexAcceleratedFind(t *testing.T) {
+	db, err := New(WithDBName("test_idx"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.DropDatabase("test_idx")
+
+	// Insert 100 docs with a "city" field.
+	for i := 0; i < 100; i++ {
+		city := "Berlin"
+		if i%10 == 0 {
+			city = "Tokyo"
+		}
+		_, err := db.Coll("people").Insert(Map{"name": "person", "city": city})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Query with single-field Eq — should use index path.
+	result, err := db.Coll("people").Eq(Map{"city": "Tokyo"}).Find()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Data) != 10 {
+		t.Fatalf("expected 10 Tokyo results, got %d", len(result.Data))
+	}
+	if result.Total != 10 {
+		t.Fatalf("expected total 10, got %d", result.Total)
+	}
+
+	// Verify all returned docs actually have city=Tokyo.
+	for _, doc := range result.Data {
+		if doc["city"] != "Tokyo" {
+			t.Fatalf("expected city=Tokyo, got %v", doc["city"])
+		}
+	}
+}
+
+func TestConcurrentInsertFind(t *testing.T) {
+	db, err := New(WithDBName("test_concurrent"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.DropDatabase("test_concurrent")
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, 200)
+
+	// 10 writers, each inserting 50 docs.
+	for w := 0; w < 10; w++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			for i := 0; i < 50; i++ {
+				_, err := db.Coll("concurrent").Insert(Map{"worker": workerID, "index": i})
+				if err != nil {
+					errCh <- err
+					return
+				}
+			}
+		}(w)
+	}
+
+	// 10 readers running concurrently.
+	for r := 0; r < 10; r++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 20; i++ {
+				_, err := db.Coll("concurrent").Find()
+				if err != nil {
+					errCh <- err
+					return
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	for e := range errCh {
+		t.Fatalf("concurrent error: %v", e)
+	}
+
+	// Verify final count = 10 writers × 50 docs = 500.
+	result, err := db.Coll("concurrent").Find()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Total != 500 {
+		t.Fatalf("expected 500 total docs, got %d", result.Total)
+	}
+}
+
+func TestUnfilteredUpdateBlocked(t *testing.T) {
+	db, err := New(WithDBName("test_nofilter"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.DropDatabase("test_nofilter")
+
+	db.Coll("items").Insert(Map{"name": "a"})
+	db.Coll("items").Insert(Map{"name": "b"})
+
+	// Update without filter should fail.
+	_, err = db.Coll("items").Update(Map{"name": "hacked"})
+	if err == nil {
+		t.Fatal("expected error for unfiltered Update, got nil")
+	}
+	if err != ErrNoFilter {
+		t.Fatalf("expected ErrNoFilter, got %v", err)
+	}
+
+	// Verify data is unchanged.
+	result, _ := db.Coll("items").Find()
+	for _, doc := range result.Data {
+		if doc["name"] == "hacked" {
+			t.Fatal("unfiltered update should not have modified data")
+		}
+	}
+}
+
+func TestUnfilteredDeleteBlocked(t *testing.T) {
+	db, err := New(WithDBName("test_nofilter_del"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.DropDatabase("test_nofilter_del")
+
+	db.Coll("items").Insert(Map{"name": "a"})
+	db.Coll("items").Insert(Map{"name": "b"})
+
+	// Delete without filter should fail.
+	err = db.Coll("items").Delete()
+	if err == nil {
+		t.Fatal("expected error for unfiltered Delete, got nil")
+	}
+	if err != ErrNoFilter {
+		t.Fatalf("expected ErrNoFilter, got %v", err)
+	}
+
+	// Verify data still exists.
+	result, _ := db.Coll("items").Find()
+	if len(result.Data) != 2 {
+		t.Fatalf("expected 2 docs after blocked delete, got %d", len(result.Data))
+	}
+}
+
+func TestBigEndianKeyOrder(t *testing.T) {
+	db, err := New(WithDBName("test_keyorder"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.DropDatabase("test_keyorder")
+
+	// Insert 3 docs — IDs will be 1, 2, 3.
+	db.Coll("ordered").Insert(Map{"val": "first"})
+	db.Coll("ordered").Insert(Map{"val": "second"})
+	db.Coll("ordered").Insert(Map{"val": "third"})
+
+	result, err := db.Coll("ordered").Find()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Data) != 3 {
+		t.Fatalf("expected 3 docs, got %d", len(result.Data))
+	}
+
+	// Verify iteration order matches insertion order.
+	expected := []string{"first", "second", "third"}
+	for i, doc := range result.Data {
+		if doc["val"] != expected[i] {
+			t.Fatalf("doc %d: expected val=%s, got %v", i, expected[i], doc["val"])
+		}
+	}
+}
+
+func TestSensitiveFieldsNotIndexed(t *testing.T) {
+	db, err := New(WithDBName("test_sensitive"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.DropDatabase("test_sensitive")
+
+	// Insert a user with a password field.
+	db.Coll("users").Insert(Map{"username": "alice", "password": "secret123"})
+
+	// The password field should NOT have an index bucket.
+	// We can verify by checking that the index lookup returns nil (no bucket).
+	tx, err := db.db.Begin(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+
+	idxBucket := tx.Bucket(indexBucketName("users", "password"))
+	if idxBucket != nil {
+		t.Fatal("password field should not be indexed, but index bucket exists")
+	}
+
+	// Username should be indexed.
+	usernameBucket := tx.Bucket(indexBucketName("users", "username"))
+	if usernameBucket == nil {
+		t.Fatal("username field should be indexed, but index bucket does not exist")
+	}
+}
+
+// --- Benchmarks ---
 
 func BenchmarkInsertMassive(b *testing.B) {
 	db, err := New(WithDBName("test_bench_insert"))

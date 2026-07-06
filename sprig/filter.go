@@ -1,6 +1,7 @@
 package sprig
 
 import (
+	"errors"
 	"fmt"
 
 	"go.etcd.io/bbolt"
@@ -9,6 +10,9 @@ import (
 const (
 	FilterTypeEQ = "eq"
 )
+
+// ErrNoFilter is returned when Update or Delete is called without any filters.
+var ErrNoFilter = errors.New("refusing to mutate without filters — add at least one Eq() filter or use a direct approach")
 
 func eq(a, b any) bool {
 	return a == b
@@ -73,6 +77,9 @@ func (f *Filter) Eq(values Map) *Filter {
 
 // Insert inserts the given values into the collection.
 func (f *Filter) Insert(values Map) (uint64, error) {
+	f.hopper.mu.Lock()
+	defer f.hopper.mu.Unlock()
+
 	tx, err := f.hopper.db.Begin(true)
 	if err != nil {
 		return 0, err
@@ -104,7 +111,11 @@ func (f *Filter) Insert(values Map) (uint64, error) {
 }
 
 // Find returns paginated, filtered query results.
+// Uses index-accelerated lookups when a single-field Eq filter is present.
 func (f *Filter) Find() (*QueryResult, error) {
+	f.hopper.mu.RLock()
+	defer f.hopper.mu.RUnlock()
+
 	tx, err := f.hopper.db.Begin(false)
 	if err != nil {
 		return nil, err
@@ -115,6 +126,18 @@ func (f *Filter) Find() (*QueryResult, error) {
 	if bucket == nil {
 		return &QueryResult{Data: []Map{}, Total: 0, Offset: f.offset, Limit: f.limit}, nil
 	}
+
+	// Try index-accelerated path: single Eq filter on a single field.
+	if records, total, ok := f.tryIndexFind(tx, bucket); ok {
+		return &QueryResult{
+			Data:   records,
+			Total:  total,
+			Offset: f.offset,
+			Limit:  f.limit,
+		}, nil
+	}
+
+	// Fallback: full scan.
 	records, total, err := f.findFiltered(bucket)
 	if err != nil {
 		return nil, err
@@ -127,8 +150,87 @@ func (f *Filter) Find() (*QueryResult, error) {
 	}, nil
 }
 
+// tryIndexFind attempts to use a secondary index for a single-field Eq filter.
+// Returns (records, total, true) on success, or (nil, 0, false) if index path is not applicable.
+func (f *Filter) tryIndexFind(tx *bbolt.Tx, bucket *bbolt.Bucket) ([]Map, int, bool) {
+	if len(f.compFilters) != 1 {
+		return nil, 0, false
+	}
+	filter := f.compFilters[0]
+	if len(filter.kvs) != 1 {
+		return nil, 0, false
+	}
+
+	// Extract the single field and value.
+	var field string
+	var value any
+	for k, v := range filter.kvs {
+		field = k
+		value = v
+	}
+
+	// Skip index for "id" lookups — those are direct key lookups.
+	if field == "id" {
+		return nil, 0, false
+	}
+
+	ids, err := lookupByIndex(tx, f.coll, field, value)
+	if err != nil || ids == nil {
+		return nil, 0, false // no index, fall back
+	}
+
+	// Fetch documents by their IDs from the index.
+	var all []Map
+	for _, id := range ids {
+		v := bucket.Get(uint64Bytes(id))
+		if v == nil {
+			continue // document was deleted but index is stale
+		}
+		record := Map{"id": id}
+		if err := f.hopper.Decoder.Decode(v, &record); err != nil {
+			continue
+		}
+		// Double-check the filter matches (index may be stale after updates).
+		if filter.apply(record) {
+			all = append(all, record)
+		}
+	}
+
+	total := len(all)
+
+	// Apply offset.
+	start := f.offset
+	if start > total {
+		start = total
+	}
+	result := all[start:]
+
+	// Apply limit.
+	if f.limit > 0 && len(result) > f.limit {
+		result = result[:f.limit]
+	}
+
+	// Apply select projection.
+	for i, record := range result {
+		result[i] = f.applySelect(record)
+	}
+
+	if result == nil {
+		result = []Map{}
+	}
+
+	return result, total, true
+}
+
 // Update updates matching documents with the given values.
 func (f *Filter) Update(values Map) ([]Map, error) {
+	if len(f.compFilters) == 0 {
+		return nil, ErrNoFilter
+	}
+
+	f.hopper.mu.Lock()
+	defer f.hopper.mu.Unlock()
+
 	tx, err := f.hopper.db.Begin(true)
 	if err != nil {
 		return nil, err
@@ -164,6 +266,13 @@ func (f *Filter) Update(values Map) ([]Map, error) {
 
 // Delete deletes all matching documents.
 func (f *Filter) Delete() error {
+	if len(f.compFilters) == 0 {
+		return ErrNoFilter
+	}
+
+	f.hopper.mu.Lock()
+	defer f.hopper.mu.Unlock()
+
 	tx, err := f.hopper.db.Begin(true)
 	if err != nil {
 		return err

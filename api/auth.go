@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -17,7 +18,8 @@ var jwtSecret []byte
 func init() {
 	secret := os.Getenv("SPRIG_JWT_SECRET")
 	if secret == "" {
-		secret = "sprig-dev-secret-change-in-production"
+		slog.Warn("SPRIG_JWT_SECRET not set, using insecure default — SET THIS IN PRODUCTION")
+		secret = "sprig-dev-secret-DO-NOT-USE-IN-PROD"
 	}
 	jwtSecret = []byte(secret)
 }
@@ -119,10 +121,20 @@ func (a *AuthHandler) HandleLogin(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, sprig.Map{"error": "failed to generate token"})
 	}
 
+	// Set cookie for browser-based dashboard access.
+	c.SetCookie(&http.Cookie{
+		Name:     "sprig_token",
+		Value:    tokenString,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   86400, // 24 hours
+	})
+
 	return c.JSON(http.StatusOK, sprig.Map{"token": tokenString, "username": req.Username})
 }
 
-// JWTMiddleware validates Bearer tokens on protected routes.
+// JWTMiddleware validates Bearer tokens on protected API routes.
 func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		authHeader := c.Request().Header.Get("Authorization")
@@ -148,3 +160,41 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(c)
 	}
 }
+
+// CookieOrJWTMiddleware checks for a Bearer header OR a sprig_token cookie.
+// This supports both API clients (header) and the browser dashboard (cookie).
+func CookieOrJWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var tokenString string
+
+		// Try Bearer header first.
+		if authHeader := c.Request().Header.Get("Authorization"); authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenString = parts[1]
+			}
+		}
+
+		// Fall back to cookie.
+		if tokenString == "" {
+			cookie, err := c.Cookie("sprig_token")
+			if err != nil || cookie.Value == "" {
+				// Redirect to login for browser requests.
+				return c.Redirect(http.StatusFound, "/login")
+			}
+			tokenString = cookie.Value
+		}
+
+		claims := &Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
+			return jwtSecret, nil
+		})
+		if err != nil || !token.Valid {
+			return c.Redirect(http.StatusFound, "/login")
+		}
+
+		c.Set("username", claims.Username)
+		return next(c)
+	}
+}
+

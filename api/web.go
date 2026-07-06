@@ -121,21 +121,27 @@ func (w *WebHandler) HandleDashboardQuery(c echo.Context) error {
 
 	if lang == "sql" {
 		q := strings.TrimSpace(c.FormValue("sql_query"))
-		if !strings.HasPrefix(strings.ToUpper(q), "SELECT * FROM") {
+		upper := strings.ToUpper(q)
+		const prefix = "SELECT * FROM "
+		if !strings.HasPrefix(upper, prefix) {
 			return c.Render(http.StatusOK, "query_result.html", map[string]any{"Error": "Only 'SELECT * FROM <table> [WHERE <k> = <v>]' is supported in this proxy demo."})
 		}
-		q = q[13:] // Strip "SELECT * FROM "
-		parts := strings.SplitN(q, "WHERE", 2)
-		name = strings.TrimSpace(parts[0])
-		
+		if len(q) <= len(prefix) {
+			return c.Render(http.StatusOK, "query_result.html", map[string]any{"Error": "Missing table name after SELECT * FROM."})
+		}
+		q = q[len(prefix):] // Strip prefix using length, preserving original case for table name
+		parts := strings.SplitN(strings.ToUpper(q), "WHERE", 2)
+		name = strings.TrimSpace(q[:len(parts[0])]) // Use original case for table name
+
 		query := w.db.Coll(name)
 		if len(parts) > 1 {
-			whereClause := strings.TrimSpace(parts[1])
+			// Extract WHERE clause from original query (preserving case)
+			whereClause := strings.TrimSpace(q[len(parts[0])+5:]) // +5 for "WHERE"
 			conds := strings.SplitN(whereClause, "=", 2)
 			if len(conds) == 2 {
 				k := strings.TrimSpace(conds[0])
 				v := strings.TrimSpace(conds[1])
-				v = strings.Trim(v, "'\" ") 
+				v = strings.Trim(v, "'\" ")
 				query = query.Eq(sprig.Map{k: v})
 			}
 		}
