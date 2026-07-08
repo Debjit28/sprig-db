@@ -141,6 +141,13 @@ func (w *WebHandler) HandleDashboardQuery(c echo.Context) error {
 		return c.Render(http.StatusOK, "query_result.html", map[string]any{"Error": "unauthorized"})
 	}
 
+	page := 1
+	if p, err := strconv.Atoi(strings.TrimSpace(c.FormValue("page"))); err == nil && p > 0 {
+		page = p
+	}
+	limit := 50
+	offset := (page - 1) * limit
+
 	lang := c.FormValue("language")
 	var result *sprig.QueryResult
 	var err error
@@ -148,6 +155,17 @@ func (w *WebHandler) HandleDashboardQuery(c echo.Context) error {
 
 	if lang == "sql" {
 		q := strings.TrimSpace(c.FormValue("sql_query"))
+		// Add pagination if the user didn't specify it explicitly.
+		upper := " " + strings.ToUpper(q) + " "
+		hasLimit := strings.Contains(upper, " LIMIT ")
+		hasOffset := strings.Contains(upper, " OFFSET ")
+		if !hasLimit {
+			q = q + " LIMIT " + strconv.Itoa(limit)
+		}
+		if !hasOffset {
+			q = q + " OFFSET " + strconv.Itoa(offset)
+		}
+
 		var selectedKeys []string
 		result, selectedKeys, err = ExecuteSQLQuery(w.db, username, q)
 		if err != nil {
@@ -170,9 +188,16 @@ func (w *WebHandler) HandleDashboardQuery(c echo.Context) error {
 			}
 		}
 
+		hasNext := result.Total > offset+limit
+		hasPrev := page > 1
 		data := map[string]any{
-			"Result": result,
-			"Keys":   keys,
+			"Result":   result,
+			"Keys":     keys,
+			"Page":     page,
+			"HasNext":  hasNext,
+			"HasPrev":  hasPrev,
+			"NextPage": page + 1,
+			"PrevPage": page - 1,
 		}
 		return c.Render(http.StatusOK, "query_result.html", data)
 	} else {
@@ -189,7 +214,7 @@ func (w *WebHandler) HandleDashboardQuery(c echo.Context) error {
 			query = query.Eq(sprig.Map{k: v})
 		}
 		query = query.Eq(sprig.Map{"_owner": username})
-		result, err = query.Limit(50).Find()
+		result, err = query.Offset(offset).Limit(limit).Find()
 	}
 
 	if err != nil {
@@ -210,9 +235,16 @@ func (w *WebHandler) HandleDashboardQuery(c echo.Context) error {
 		keys = append(keys, key)
 	}
 
+	hasNext := result.Total > offset+limit
+	hasPrev := page > 1
 	data := map[string]any{
-		"Result": result,
-		"Keys":   keys,
+		"Result":   result,
+		"Keys":     keys,
+		"Page":     page,
+		"HasNext":  hasNext,
+		"HasPrev":  hasPrev,
+		"NextPage": page + 1,
+		"PrevPage": page - 1,
 	}
 	return c.Render(http.StatusOK, "query_result.html", data)
 }
@@ -234,6 +266,13 @@ func (w *WebHandler) HandleLogs(c echo.Context) error {
 	if !ok || username == "" {
 		return c.Redirect(http.StatusFound, "/login")
 	}
+
+	page := 1
+	if p, err := strconv.Atoi(c.QueryParam("page")); err == nil && p > 0 {
+		page = p
+	}
+	limit := 50
+	offset := (page - 1) * limit
 
 	result, err := w.db.Coll("_logs").Eq(sprig.Map{"_owner": username}).Find()
 	if err != nil {
@@ -258,9 +297,13 @@ func (w *WebHandler) HandleLogs(c echo.Context) error {
 		return rows[i].ts > rows[j].ts
 	})
 
-	limit := 50
-	if len(rows) < limit {
-		limit = len(rows)
+	total := len(rows)
+	if offset > total {
+		offset = total
+	}
+	end := offset + limit
+	if end > total {
+		end = total
 	}
 
 	type viewLog struct {
@@ -270,8 +313,8 @@ func (w *WebHandler) HandleLogs(c echo.Context) error {
 		Status int
 		Error  string
 	}
-	view := make([]viewLog, 0, limit)
-	for i := 0; i < limit; i++ {
+	view := make([]viewLog, 0, end-offset)
+	for i := offset; i < end; i++ {
 		m := rows[i].m
 		view = append(view, viewLog{
 			Time:   formatUnixNano(m["ts"]),
@@ -287,9 +330,17 @@ func (w *WebHandler) HandleLogs(c echo.Context) error {
 		view = []viewLog{}
 	}
 
+	hasNext := total > offset+limit
+	hasPrev := page > 1
 	return c.Render(http.StatusOK, "logs.html", map[string]any{
 		"Username": username,
 		"Logs":     view,
+		"Page":     page,
+		"HasNext":  hasNext,
+		"HasPrev":  hasPrev,
+		"NextPage": page + 1,
+		"PrevPage": page - 1,
+		"Total":    total,
 	})
 }
 

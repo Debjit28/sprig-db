@@ -61,6 +61,8 @@
               <option value="nosql">NoSQL Mode</option>
             </select>
           </div>
+
+          <input type="hidden" name="page" id="query-page" value="1">
           
           <div id="sql-inputs">
             <input type="text" name="sql_query" class="form-input" style="font-family:monospace; color:var(--accent);" placeholder="SELECT * FROM users WHERE role = 'admin'" value="SELECT * FROM users">
@@ -221,6 +223,10 @@
 
     async function executeQuery(e) {
       e.preventDefault();
+      // If this is a fresh submit (not triggered by pagination), reset to page 1.
+      if (!e?.detail?.keepPage) {
+        document.getElementById('query-page').value = '1';
+      }
       const form = e.target;
       const res = await fetch('/dashboard/query', {
         method: 'POST',
@@ -229,6 +235,15 @@
       });
       const text = await res.text();
       document.getElementById('query-results').innerHTML = text;
+    }
+
+    async function goToQueryPage(page) {
+      const n = Number(page);
+      if (!Number.isFinite(n) || n < 1) return;
+      const form = document.querySelector('form[onsubmit="executeQuery(event)"]');
+      document.getElementById('query-page').value = String(n);
+      // Reuse the existing submit pipeline but keep the page.
+      await executeQuery({ preventDefault: () => {}, target: form, detail: { keepPage: true } });
     }
   </script>
 </body>

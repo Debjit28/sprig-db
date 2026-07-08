@@ -21,9 +21,31 @@
       {{end}}
     </tbody>
   </table>
+
+  {{if gt .Result.Total 50}}
+  <div class="pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px;">
+    <div class="pagination-controls" style="display:flex; gap:10px;">
+      {{if .HasPrev}}
+      <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage({{.PrevPage}})">← Previous</button>
+      {{else}}
+      <button class="btn btn-ghost btn-sm" type="button" disabled style="opacity:0.5; cursor:not-allowed;">← Previous</button>
+      {{end}}
+
+      {{if .HasNext}}
+      <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage({{.NextPage}})">Next →</button>
+      {{else}}
+      <button class="btn btn-ghost btn-sm" type="button" disabled style="opacity:0.5; cursor:not-allowed;">Next →</button>
+      {{end}}
+    </div>
+    <span class="pagination-info" style="color:var(--text-muted); font-size:0.9rem;">
+      Page {{.Page}} • Showing {{len .Result.Data}} rows (Total: {{.Result.Total}})
+    </span>
+  </div>
+  {{else}}
   <div style="margin-top:10px; font-size:0.85rem; color:var(--text-muted);">
     Returned {{len .Result.Data}} rows.
   </div>
+  {{end}}
 </div>
 {{end}}
 {{end}}
