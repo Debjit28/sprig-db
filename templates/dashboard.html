@@ -54,7 +54,7 @@
       <!-- Query Console -->
       <div class="card" style="margin-bottom:28px;">
         <h2 style="font-size:1.1rem; margin-bottom:12px;">🔍 Live Query Console</h2>
-        <form hx-post="/dashboard/query" hx-target="#query-results">
+        <form onsubmit="executeQuery(event)">
           <div style="display:flex; gap:10px; margin-bottom:10px;">
             <select name="language" class="form-input" style="width:150px; background:var(--bg-lighter);" onchange="toggleQueryMode(this.value)">
               <option value="sql">SQL Mode</option>
@@ -217,6 +217,18 @@
         const data = await res.json().catch(() => ({}));
         alert(data.error || 'Delete failed');
       }
+    }
+
+    async function executeQuery(e) {
+      e.preventDefault();
+      const form = e.target;
+      const res = await fetch('/dashboard/query', {
+        method: 'POST',
+        body: new FormData(form),
+        credentials: 'include'
+      });
+      const text = await res.text();
+      document.getElementById('query-results').innerHTML = text;
     }
   </script>
 </body>
