@@ -19,6 +19,15 @@ func main() {
 	logger := sprig.NewLogger(slog.LevelInfo)
 	slog.SetDefault(logger)
 
+	// Clean-slate mode is opt-in.
+	// Set SPRIG_RESET_DATA=true to delete the DB on startup.
+	if os.Getenv("SPRIG_RESET_DATA") == "true" || os.Getenv("SPRIG_RESET_DATA") == "1" {
+		if err := os.Remove("default.sprig"); err != nil && !os.IsNotExist(err) {
+			slog.Error("failed to reset data file", "error", err)
+			os.Exit(1)
+		}
+	}
+
 	db, err := sprig.New()
 	if err != nil {
 		slog.Error("failed to initialize database", "error", err)
@@ -50,6 +59,34 @@ func main() {
 		},
 	}))
 
+	// Best-effort request logging into the DB (tenant-scoped).
+	// This powers the "Logs" UI.
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			req := c.Request()
+			err := next(c)
+
+			owner, _ := c.Get("username").(string)
+			if owner != "" {
+				status := c.Response().Status
+				var errMsg string
+				if err != nil {
+					errMsg = err.Error()
+				}
+				_, _ = db.Coll("_logs").Insert(sprig.Map{
+					"_owner": owner,
+					"ts":      time.Now().UnixNano(),
+					"method":  req.Method,
+					"path":     req.URL.Path,
+					"status":  status,
+					"error":   errMsg,
+				})
+			}
+
+			return err
+		}
+	})
+
 	// Custom error handler.
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		code := http.StatusInternalServerError
@@ -71,25 +108,44 @@ func main() {
 	e.GET("/", func(c echo.Context) error { return c.Redirect(http.StatusFound, "/login") })
 	e.GET("/login", web.HandleLoginPage)
 
-	// Protected web routes (dashboard requires login via cookie or header).
+	// Protected web routes (requires login).
 	webGroup := e.Group("")
 	webGroup.Use(api.CookieOrJWTMiddleware)
-	webGroup.GET("/dashboard", web.HandleDashboard)
-	webGroup.GET("/collections/:name", web.HandleCollectionPage)
-	webGroup.POST("/dashboard/query", web.HandleDashboardQuery)
+
+	// User portal (accessible to all logged-in users)
+	webGroup.GET("/user-portal", web.HandleUserPortal)
+
+	// Tenant-scoped dashboard routes (all logged-in users).
+	tenantGroup := webGroup.Group("/dashboard")
+	tenantGroup.GET("", web.HandleDashboard)
+	tenantGroup.POST("/query", web.HandleDashboardQuery)
+	tenantGroup.GET("/settings", web.HandleSettings)
+	tenantGroup.GET("/logs", web.HandleLogs)
+
+	// Tenant-scoped collection browsing (all logged-in users).
+	collGroup := webGroup.Group("/collections")
+	collGroup.GET("/:name", web.HandleCollectionPage)
 
 	// Public auth routes.
+	e.GET("/auth/captcha", auth.HandleCaptcha)
 	e.POST("/auth/register", auth.HandleRegister)
 	e.POST("/auth/login", auth.HandleLogin)
+	e.POST("/auth/forgot-password", auth.HandleForgotPassword)
+	e.POST("/auth/reset-password", auth.HandleResetPassword)
 
 	// Protected API routes.
 	apiGroup := e.Group("/api")
-	apiGroup.Use(api.JWTMiddleware)
-	apiGroup.GET("", server.HandleGetCollections)
-	apiGroup.POST("/:collname", server.HandlePostInsert)
-	apiGroup.GET("/:collname", server.HandleGetQuery)
-	apiGroup.PUT("/:collname", server.HandlePutUpdate)
-	apiGroup.DELETE("/:collname", server.HandleDelete)
+	apiGroup.Use(api.CookieOrJWTAPIMiddleware)
+	apiGroup.GET("/collections", server.HandleGetCollections)
+	apiGroup.POST("/collections", server.HandleCreateCollection)
+	apiGroup.GET("/collections/:collname/schema", server.HandleGetCollectionSchema)
+	apiGroup.PUT("/collections/:collname/schema", server.HandlePutCollectionSchema)
+	apiGroup.DELETE("/collections/:collname", server.HandleDeleteCollection)
+	apiGroup.POST("/records/:collname", server.HandlePostInsert)
+	apiGroup.GET("/records/:collname", server.HandleGetQuery)
+	apiGroup.PUT("/records/:collname", server.HandlePutUpdate)
+	apiGroup.DELETE("/records/:collname", server.HandleDelete)
+	apiGroup.POST("/settings/reset", server.HandleResetMyData)
 
 	// Start server in goroutine.
 	go func() {

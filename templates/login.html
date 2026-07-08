@@ -6,19 +6,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sprig-DB — Login</title>
   <link rel="stylesheet" href="/static/style.css">
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 <body>
   <div class="login-container">
-    <div class="card login-card">
+    <div class="card login-card" id="main-card">
       <div class="login-header">
         <span class="icon">🌱</span>
         <h1>Sprig-DB</h1>
         <p>Enterprise Document Database</p>
       </div>
 
-      <div id="auth-form">
-        <!-- Login Form -->
+      <div id="auth-success" style="display:none; margin-bottom:16px; padding:10px; border-radius:8px; background:rgba(46, 213, 115, 0.2); color:#2ed573; font-size:0.9rem; text-align:center;"></div>
+      <div id="auth-error" style="display:none; margin-bottom:16px; padding:10px; border-radius:8px; background:var(--danger-bg); color:var(--danger); font-size:0.85rem; text-align:center;"></div>
+
+      <!-- LoginForm -->
+      <div id="login-form-container">
         <form id="login-form" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label class="form-label" for="username">Username</label>
@@ -28,6 +30,9 @@
             <label class="form-label" for="password">Password</label>
             <input class="form-input" type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
           </div>
+          <div style="text-align: right; margin-bottom: 12px; margin-top: -8px;">
+            <a href="#" onclick="showSection('forgot-form-container')" style="font-size: 0.8rem; color: var(--text-muted); text-decoration: none;">Forgot password?</a>
+          </div>
           <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center;">
             Sign In
           </button>
@@ -35,45 +40,104 @@
 
         <div class="login-toggle">
           Don't have an account?
-          <a onclick="toggleForm()">Create one</a>
+          <a href="#" onclick="showSection('register-form-container'); loadCaptcha();">Create one</a>
         </div>
       </div>
 
-      <div id="register-form" style="display:none;">
+      <!-- Register Form -->
+      <div id="register-form-container" style="display:none;">
         <form onsubmit="handleRegister(event)">
           <div class="form-group">
             <label class="form-label" for="reg-username">Username</label>
-            <input class="form-input" type="text" id="reg-username" name="username" required placeholder="Choose a username">
+            <input class="form-input" type="text" id="reg-username" required placeholder="Choose a username">
           </div>
           <div class="form-group">
             <label class="form-label" for="reg-password">Password</label>
-            <input class="form-input" type="password" id="reg-password" name="password" required placeholder="Choose a password">
+            <input class="form-input" type="password" id="reg-password" required placeholder="Choose a password">
           </div>
+          
+          <div class="form-group">
+            <label class="form-label">Picture CAPTCHA</label>
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 4px;">
+              <img id="captcha-image" alt="Captcha image" style="height: 56px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-light);" />
+              <button type="button" class="btn btn-ghost btn-sm" onclick="loadCaptcha()">Refresh</button>
+              <input type="hidden" id="reg-captcha-token">
+              <input class="form-input" type="text" id="reg-captcha-answer" required placeholder="Type the code" style="width: 100%; text-transform: uppercase;">
+            </div>
+          </div>
+
           <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center;">
             Create Account
           </button>
         </form>
         <div class="login-toggle">
           Already have an account?
-          <a onclick="toggleForm()">Sign in</a>
+          <a href="#" onclick="showSection('login-form-container')">Sign in</a>
         </div>
       </div>
 
-      <div id="auth-error" style="display:none; margin-top:16px; padding:10px; border-radius:8px; background:var(--danger-bg); color:var(--danger); font-size:0.85rem; text-align:center;"></div>
+      <!-- Forgot Password Form -->
+      <div id="forgot-form-container" style="display:none;">
+        <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; margin-bottom: 15px;">Enter your username to receive a reset token on the server console.</p>
+        <form onsubmit="handleForgot(event)">
+          <div class="form-group">
+            <label class="form-label" for="forgot-username">Username</label>
+            <input class="form-input" type="text" id="forgot-username" required placeholder="Enter username">
+          </div>
+          <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center;">Request Reset Token</button>
+        </form>
+        <div class="login-toggle">
+          <a href="#" onclick="showSection('reset-form-container')">I have a reset token</a>
+        </div>
+        <div class="login-toggle" style="margin-top: 5px;">
+          <a href="#" onclick="showSection('login-form-container')">&larr; Back to login</a>
+        </div>
+      </div>
+
+      <!-- Reset Password Form -->
+      <div id="reset-form-container" style="display:none;">
+        <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; margin-bottom: 15px;">Enter your reset token and a new password.</p>
+        <form onsubmit="handleReset(event)">
+          <div class="form-group">
+            <label class="form-label" for="reset-token">Reset Token</label>
+            <input class="form-input" type="text" id="reset-token" required placeholder="Paste token here">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reset-password">New Password</label>
+            <input class="form-input" type="password" id="reset-password" required placeholder="New password">
+          </div>
+          <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center;">Reset Password</button>
+        </form>
+        <div class="login-toggle">
+          <a href="#" onclick="showSection('login-form-container')">&larr; Back to login</a>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <script>
-    function toggleForm() {
-      const login = document.getElementById('auth-form');
-      const reg = document.getElementById('register-form');
-      login.style.display = login.style.display === 'none' ? '' : 'none';
-      reg.style.display = reg.style.display === 'none' ? '' : 'none';
+    const sections = [
+      'login-form-container', 'register-form-container', 
+      'forgot-form-container', 'reset-form-container'
+    ];
+
+    function showSection(id) {
+      sections.forEach(sec => {
+        document.getElementById(sec).style.display = (sec === id) ? 'block' : 'none';
+      });
       document.getElementById('auth-error').style.display = 'none';
+      document.getElementById('auth-success').style.display = 'none';
     }
 
     function showError(msg) {
       const el = document.getElementById('auth-error');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function showSuccess(msg) {
+      const el = document.getElementById('auth-success');
       el.textContent = msg;
       el.style.display = 'block';
     }
@@ -86,32 +150,100 @@
         const res = await fetch('/auth/login', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
+          credentials: 'include',
           body: JSON.stringify({username, password})
         });
         const data = await res.json();
         if (!res.ok) { showError(data.error); return; }
-        localStorage.setItem('sprig_token', data.token);
-        localStorage.setItem('sprig_user', data.username);
-        window.location.href = '/dashboard';
+        finishLogin(data.token, data.username, data.is_admin);
       } catch(err) { showError('Connection failed'); }
+    }
+
+    function finishLogin(token, username, isAdmin) {
+      localStorage.setItem('sprig_token', token);
+      localStorage.setItem('sprig_user', username);
+      localStorage.setItem('sprig_is_admin', isAdmin);
+      
+      // Redirect based on role
+      if (isAdmin) {
+        window.location.href = '/dashboard';
+      } else {
+        window.location.href = '/user-portal';
+      }
+    }
+
+    async function loadCaptcha() {
+      try {
+        const res = await fetch('/auth/captcha', { credentials: 'include' });
+        const data = await res.json();
+        document.getElementById('captcha-image').src = data.captcha_image;
+        document.getElementById('reg-captcha-token').value = data.captcha_token;
+        document.getElementById('reg-captcha-answer').value = '';
+      } catch(err) { console.error('Failed to load captcha', err); }
     }
 
     async function handleRegister(e) {
       e.preventDefault();
       const username = document.getElementById('reg-username').value;
       const password = document.getElementById('reg-password').value;
+      const captcha_token = document.getElementById('reg-captcha-token').value;
+      const captcha_answer = document.getElementById('reg-captcha-answer').value;
       try {
         const res = await fetch('/auth/register', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({username, password})
+          credentials: 'include',
+          body: JSON.stringify({username, password, captcha_token, captcha_answer})
+        });
+        const data = await res.json();
+        if (!res.ok) { 
+          showError(data.error); 
+          loadCaptcha(); // Reload captcha on failure
+          return; 
+        }
+        
+        // Show success and ask user to refresh/login as requested
+        showSection('login-form-container');
+        showSuccess("New user creation successful! Please log in.");
+        document.getElementById('username').value = username;
+        document.getElementById('password').value = ''; // force re-enter password
+      } catch(err) { showError('Connection failed'); }
+    }
+
+    async function handleForgot(e) {
+      e.preventDefault();
+      const username = document.getElementById('forgot-username').value;
+      try {
+        const res = await fetch('/auth/forgot-password', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          credentials: 'include',
+          body: JSON.stringify({username})
         });
         const data = await res.json();
         if (!res.ok) { showError(data.error); return; }
-        // Auto-login after register
-        await handleLogin(new Event('submit'));
-        document.getElementById('username').value = username;
-        document.getElementById('password').value = password;
+        
+        showSection('reset-form-container');
+        showSuccess("Reset token generated on server console.");
+      } catch(err) { showError('Connection failed'); }
+    }
+
+    async function handleReset(e) {
+      e.preventDefault();
+      const reset_token = document.getElementById('reset-token').value;
+      const password = document.getElementById('reset-password').value;
+      try {
+        const res = await fetch('/auth/reset-password', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          credentials: 'include',
+          body: JSON.stringify({reset_token, password})
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.error); return; }
+        
+        showSection('login-form-container');
+        showSuccess("Password reset successful. Please log in with your new password.");
       } catch(err) { showError('Connection failed'); }
     }
   </script>

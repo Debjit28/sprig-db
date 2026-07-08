@@ -1,0 +1,75 @@
+{{define "settings.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprig-DB — Settings</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="layout-wrapper">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="/dashboard" class="sidebar-brand"><span class="icon">🌱</span> Sprig-DB</a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/dashboard" class="sidebar-link">📁 Collections</a>
+        <a href="/dashboard/settings" class="sidebar-link active">⚙️ Settings</a>
+        <a href="/dashboard/logs" class="sidebar-link">📊 Logs</a>
+      </nav>
+      <div class="sidebar-user" style="position: absolute; bottom: 24px; width: calc(100% - 48px);">
+        <div id="user-display" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; text-align: center;">
+          👤 <strong>{{.Username}}</strong>
+        </div>
+        <button class="btn btn-danger btn-sm" style="width: 100%; justify-content: center;" onclick="logout()">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header" style="margin-top: 0;">
+        <h1 class="page-title">Settings</h1>
+      </div>
+
+      <div class="card" style="max-width: 720px;">
+        <h2 style="font-size:1.1rem; margin-bottom:10px;">Tenant-scoped actions</h2>
+        <p style="color:var(--text-muted); margin-bottom:16px;">
+          This app stores data per user via <code>_owner</code>. Use the buttons below to manage your own tenant data.
+        </p>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-danger" type="button" onclick="resetMyData()">
+            Reset My Data
+          </button>
+        </div>
+        <div id="settings-msg" style="margin-top:14px; color:var(--text-muted);"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('sprig_token');
+      localStorage.removeItem('sprig_user');
+      localStorage.removeItem('sprig_is_admin');
+      document.cookie = "sprig_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      window.location.href = '/login';
+    }
+
+    async function resetMyData() {
+      if (!confirm('Reset ALL your tenant data? This cannot be undone.')) return;
+      const res = await fetch('/api/settings/reset', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      const el = document.getElementById('settings-msg');
+      if (res.ok) {
+        el.textContent = data.message || 'Reset successful';
+        setTimeout(() => window.location.href = '/dashboard', 500);
+      } else {
+        el.textContent = data.error || 'Reset failed';
+      }
+    }
+  </script>
+</body>
+</html>
+{{end}}
+

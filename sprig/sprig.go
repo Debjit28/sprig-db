@@ -88,6 +88,45 @@ func (h *Sprig) CreateCollection(name string) error {
 	return tx.Commit()
 }
 
+// DropCollection removes a collection bucket and its secondary indexes.
+func (h *Sprig) DropCollection(name string) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	tx, err := h.db.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := tx.DeleteBucket([]byte(name)); err != nil && err != bbolt.ErrBucketNotFound {
+		return err
+	}
+
+	// Best-effort cleanup of all index buckets for this collection.
+	var indexBuckets [][]byte
+	if err := tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
+		n := string(bucketName)
+		prefix := fmt.Sprintf("_idx_%s_", name)
+		if len(n) >= len(prefix) && n[:len(prefix)] == prefix {
+			copied := make([]byte, len(bucketName))
+			copy(copied, bucketName)
+			indexBuckets = append(indexBuckets, copied)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	for _, idx := range indexBuckets {
+		if err := tx.DeleteBucket(idx); err != nil && err != bbolt.ErrBucketNotFound {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (h *Sprig) Coll(name string) *Filter {
 	return NewFilter(h, name)
 }

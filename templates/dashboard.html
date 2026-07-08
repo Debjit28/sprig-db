@@ -9,90 +9,104 @@
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 <body>
-  <nav class="navbar">
-    <div class="container">
-      <a href="/dashboard" class="navbar-brand">
-        <span class="icon">🌱</span> Sprig-DB
-      </a>
-      <div class="navbar-nav">
-        <span class="navbar-user" id="user-display"></span>
-        <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+  
+  <div class="layout-wrapper">
+    <!-- Left Navigation Sidebar (PocketBase clone) -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+         <a href="/dashboard" class="sidebar-brand"><span class="icon">🌱</span> Sprig-DB</a>
       </div>
-    </div>
-  </nav>
-
-  <div class="container">
-    <div class="page-header">
-      <h1 class="page-title">Dashboard</h1>
-      <button class="btn btn-primary" onclick="showCreateModal()">+ New Collection</button>
-    </div>
-
-    <!-- Stats -->
-    <div class="grid grid-cols-3" style="margin-bottom:28px;">
-      <div class="card">
-        <div class="stat-value">{{.CollectionCount}}</div>
-        <div class="stat-label">Collections</div>
-      </div>
-      <div class="card">
-        <div class="stat-value">🌱</div>
-        <div class="stat-label">Engine: bbolt</div>
-      </div>
-      <div class="card">
-        <div class="stat-value"><span class="badge badge-success">Online</span></div>
-        <div class="stat-label">Server Status</div>
-      </div>
-    </div>
-
-    <!-- Query Console -->
-    <div class="card" style="margin-bottom:28px;">
-      <h2 style="font-size:1.1rem; margin-bottom:12px;">🔍 Live Query Console</h2>
-      <form hx-post="/dashboard/query" hx-target="#query-results" hx-headers='js:{"Authorization": "Bearer " + localStorage.getItem("sprig_token")}'>
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-          <select name="language" class="form-input" style="width:150px; background:var(--bg-lighter);" onchange="toggleQueryMode(this.value)">
-            <option value="sql">SQL Mode</option>
-            <option value="nosql">NoSQL Mode</option>
-          </select>
-        </div>
-        
-        <div id="sql-inputs">
-          <input type="text" name="sql_query" class="form-input" style="font-family:monospace; color:var(--accent);" placeholder="SELECT * FROM users WHERE role = 'admin'" value="SELECT * FROM users">
-        </div>
-        
-        <div id="nosql-inputs" style="display:none; gap:10px;">
-          <input type="text" name="collection" class="form-input" placeholder="Collection (e.g. users)">
-          <input type="text" name="filter_key" class="form-input" placeholder="Filter Key (optional)">
-          <input type="text" name="filter_val" class="form-input" placeholder="Filter Value (optional)">
-        </div>
-        
-        <button type="submit" class="btn btn-primary" style="margin-top:14px;">⚡ Execute Query</button>
-      </form>
+      <nav class="sidebar-nav">
+         <a href="/dashboard" class="sidebar-link active">📁 Collections</a>
+         <a href="/dashboard/settings" class="sidebar-link">⚙️ Settings</a>
+         <a href="/dashboard/logs" class="sidebar-link">📊 Logs</a>
+      </nav>
       
-      <!-- Where HTMX will swap the query results -->
-      <div id="query-results" style="margin-top:20px;"></div>
-    </div>
-
-    <!-- Collections -->
-    <h2 style="font-size:1.1rem; margin-bottom:16px; color:var(--text-secondary);">Collections</h2>
-    {{if .Collections}}
-    <div class="grid grid-cols-3">
-      {{range .Collections}}
-      <a href="/collections/{{.Name}}" class="card" style="text-decoration:none; cursor:pointer;">
-        <div class="card-header">
-          <span class="card-title">📁 {{.Name}}</span>
-          <span class="badge badge-accent">{{.Count}} docs</span>
-        </div>
-        <div class="card-subtitle">Click to browse documents</div>
-      </a>
-      {{end}}
-    </div>
-    {{else}}
-    <div class="card">
-      <div class="empty-state">
-        <span class="icon">📂</span>
-        <p>No collections yet. Insert data via the API or create one above.</p>
+      <div class="sidebar-user" style="position: absolute; bottom: 24px; width: calc(100% - 48px);">
+         <div id="user-display" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; text-align: center;"></div>
+         <button class="btn btn-danger btn-sm" style="width: 100%; justify-content: center;" onclick="logout()">Logout</button>
       </div>
-    </div>
-    {{end}}
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <div class="page-header" style="margin-top: 0;">
+        <h1 class="page-title">Dashboard</h1>
+        <button class="btn btn-primary" onclick="showCreateModal()">+ New Collection</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-3" style="margin-bottom:28px;">
+        <div class="card">
+          <div class="stat-value">{{.CollectionCount}}</div>
+          <div class="stat-label">Collections</div>
+        </div>
+        <div class="card">
+          <div class="stat-value">🌱</div>
+          <div class="stat-label">Engine: bbolt</div>
+        </div>
+        <div class="card">
+          <div class="stat-value"><span class="badge badge-success">Online</span></div>
+          <div class="stat-label">Server Status</div>
+        </div>
+      </div>
+
+      <!-- Query Console -->
+      <div class="card" style="margin-bottom:28px;">
+        <h2 style="font-size:1.1rem; margin-bottom:12px;">🔍 Live Query Console</h2>
+        <form hx-post="/dashboard/query" hx-target="#query-results">
+          <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <select name="language" class="form-input" style="width:150px; background:var(--bg-lighter);" onchange="toggleQueryMode(this.value)">
+              <option value="sql">SQL Mode</option>
+              <option value="nosql">NoSQL Mode</option>
+            </select>
+          </div>
+          
+          <div id="sql-inputs">
+            <input type="text" name="sql_query" class="form-input" style="font-family:monospace; color:var(--accent);" placeholder="SELECT * FROM users WHERE role = 'admin'" value="SELECT * FROM users">
+          </div>
+          
+          <div id="nosql-inputs" style="display:none; gap:10px;">
+            <input type="text" name="collection" class="form-input" placeholder="Collection (e.g. users)">
+            <input type="text" name="filter_key" class="form-input" placeholder="Filter Key (optional)">
+            <input type="text" name="filter_val" class="form-input" placeholder="Filter Value (optional)">
+          </div>
+          
+          <button type="submit" class="btn btn-primary" style="margin-top:14px;">⚡ Execute Query</button>
+        </form>
+        
+        <!-- Where HTMX will swap the query results -->
+        <div id="query-results" style="margin-top:20px;"></div>
+      </div>
+
+      <!-- Collections -->
+      <h2 style="font-size:1.1rem; margin-bottom:16px; color:var(--text-secondary);">Collections</h2>
+      {{if .Collections}}
+      <div class="grid grid-cols-3">
+        {{range .Collections}}
+        <a href="/collections/{{.Name}}" class="card" style="text-decoration:none; cursor:pointer;" onclick="return true;">
+          <div class="card-header">
+            <span class="card-title">📁 {{.Name}}</span>
+            <span class="badge badge-accent">{{.Count}} docs</span>
+          </div>
+          <div class="card-subtitle">Click to browse documents</div>
+          <div style="margin-top:10px; display:flex; justify-content: flex-end;">
+            <button class="btn btn-danger btn-sm" type="button" onclick="event.preventDefault(); event.stopPropagation(); deleteCollection('{{.Name}}')">
+              Delete
+            </button>
+          </div>
+        </a>
+        {{end}}
+      </div>
+      {{else}}
+      <div class="card">
+        <div class="empty-state">
+          <span class="icon">📂</span>
+          <p>No collections yet. Insert data via the API or create one above.</p>
+        </div>
+      </div>
+      {{end}}
+    </main>
   </div>
 
   <!-- Create Collection Modal -->
@@ -103,6 +117,24 @@
         <div class="form-group">
           <label class="form-label" for="coll-name">Collection Name</label>
           <input class="form-input" type="text" id="coll-name" required placeholder="e.g. users, products, orders">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="field-name">First Field Name</label>
+          <input class="form-input" type="text" id="field-name" required placeholder="e.g. title">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="field-type">First Field Type</label>
+          <select class="form-input" id="field-type" style="background:var(--bg-lighter);">
+            <option value="string">string</option>
+            <option value="number">number</option>
+            <option value="bool">bool</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="field-required">
+            <span class="form-label" style="margin:0;">Required field</span>
+          </label>
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" onclick="hideCreateModal()">Cancel</button>
@@ -115,12 +147,16 @@
   <script>
     const token = localStorage.getItem('sprig_token');
     const user = localStorage.getItem('sprig_user');
-    if (!token) window.location.href = '/login';
-    document.getElementById('user-display').textContent = '👤 ' + (user || 'Admin');
+
+    // Server-side middleware already protects this page.
+    document.getElementById('user-display').innerHTML = '👤 <strong>' + (user || 'Admin') + '</strong><br><span style="font-size:0.75rem; color:var(--success);">Admin</span>';
 
     function logout() {
       localStorage.removeItem('sprig_token');
       localStorage.removeItem('sprig_user');
+      localStorage.removeItem('sprig_is_admin');
+      // clear cookie by setting to past date
+      document.cookie = "sprig_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       window.location.href = '/login';
     }
 
@@ -135,14 +171,51 @@
     async function createCollection(e) {
       e.preventDefault();
       const name = document.getElementById('coll-name').value;
-      // Insert a marker document to create the collection, then delete it.
-      const res = await fetch('/api/' + name, {
+      const fieldName = document.getElementById('field-name').value;
+      const fieldType = document.getElementById('field-type').value;
+      const fieldRequired = document.getElementById('field-required').checked;
+
+      const payload = {
+        name,
+        fields: {}
+      };
+      payload.fields[fieldName] = {
+        type: fieldType,
+        required: fieldRequired
+      };
+
+      const headers = {'Content-Type': 'application/json'};
+      // If localStorage exists, prefer Authorization; otherwise cookie auth will work.
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      const res = await fetch('/api/collections', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
-        body: JSON.stringify({"_init": true})
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         window.location.reload();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to create collection');
+      }
+    }
+
+    async function deleteCollection(name) {
+      if (!confirm('Delete this collection for your account only?')) return;
+      const headers = {};
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      const res = await fetch('/api/collections/' + encodeURIComponent(name), {
+        method: 'DELETE',
+        headers
+      });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Delete failed');
       }
     }
   </script>

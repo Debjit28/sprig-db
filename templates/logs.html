@@ -1,0 +1,82 @@
+{{define "logs.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprig-DB — Logs</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="layout-wrapper">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="/dashboard" class="sidebar-brand"><span class="icon">🌱</span> Sprig-DB</a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/dashboard" class="sidebar-link">📁 Collections</a>
+        <a href="/dashboard/settings" class="sidebar-link">⚙️ Settings</a>
+        <a href="/dashboard/logs" class="sidebar-link active">📊 Logs</a>
+      </nav>
+      <div class="sidebar-user" style="position: absolute; bottom: 24px; width: calc(100% - 48px);">
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; text-align: center;">
+          👤 <strong>{{.Username}}</strong>
+        </div>
+        <button class="btn btn-danger btn-sm" style="width: 100%; justify-content: center;" onclick="logout()">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header" style="margin-top: 0;">
+        <h1 class="page-title">Logs</h1>
+      </div>
+
+      <div class="card" style="max-width: 980px;">
+        {{if .Logs}}
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Status</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .Logs}}
+              <tr>
+                <td>{{.Time}}</td>
+                <td>{{.Method}}</td>
+                <td class="json-cell">{{.Path}}</td>
+                <td>{{.Status}}</td>
+                <td class="json-cell">{{.Error}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="empty-state">
+          <span class="icon">🧾</span>
+          <p>No logs yet.</p>
+        </div>
+        {{end}}
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('sprig_token');
+      localStorage.removeItem('sprig_user');
+      localStorage.removeItem('sprig_is_admin');
+      document.cookie = "sprig_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      window.location.href = '/login';
+    }
+  </script>
+</body>
+</html>
+{{end}}
+

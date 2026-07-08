@@ -1,0 +1,47 @@
+{{define "user_portal.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprig-DB — User Portal</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="card login-card" style="max-width: 500px;">
+      <div class="login-header">
+        <span class="icon" style="font-size: 3rem;">👤</span>
+        <h1>Welcome, {{.Username}}!</h1>
+        <p>You are logged in as a standard user.</p>
+      </div>
+
+      <div style="background: var(--surface-light); padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid var(--border);">
+        <h3>User Portal Access</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;">
+          This space is for regular users. Administrators have access to the full data management dashboard.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <a class="btn btn-secondary" style="flex: 1; justify-content: center; text-decoration:none; display:flex; align-items:center; justify-content:center;" href="/dashboard">
+          Manage My Data
+        </a>
+        <button class="btn btn-danger" style="flex: 1; justify-content: center;" onclick="logout()">Log Out</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('sprig_token');
+      localStorage.removeItem('sprig_user');
+      localStorage.removeItem('sprig_is_admin');
+      document.cookie = "sprig_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      window.location.href = '/login';
+    }
+
+  </script>
+</body>
+</html>
+{{end}}
