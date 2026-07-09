@@ -1,0 +1,48 @@
+-- 1. Fetch all columns and rows from the collection
+SELECT * FROM employee
+
+-- 2. Fetch only specific fields to save bandwidth
+SELECT name, post FROM employee
+
+-- 3. Filter using an exact match (=)
+SELECT * FROM employee WHERE post = 'Senior QA Engineer'
+
+-- 4. Filter using a non-equality check (!=)
+SELECT * FROM employee WHERE post != 'QA Intern'
+
+-- 5. Filter using numeric comparisons (>, <, >=, <=)
+SELECT * FROM employee WHERE years_working >= 5
+
+-- 6. Pattern matching using wildcard prefix or suffix (%)
+SELECT * FROM employee WHERE name LIKE 'Sarah%'
+SELECT * FROM employee WHERE post LIKE '%Automation%'
+
+-- 7. Single-character pattern matching (_)
+SELECT * FROM employee WHERE name LIKE 'Dav_d Kim'
+
+-- 8. Match against a specific list of values
+SELECT * FROM employee WHERE post IN ('SDET', 'QA Automation Lead', 'QA Manager')
+
+-- 9. Combine multiple conditions using AND (both must be true)
+SELECT * FROM employee WHERE post = 'QA Engineer' AND years_working > 2
+
+-- 10. Combine conditions using OR (at least one must be true)
+SELECT * FROM employee WHERE years_working = 0 OR post = 'QA Intern'
+
+-- 11. Sort your documents in ascending order (lowest to highest)
+SELECT * FROM employee ORDER BY years_working ASC
+
+-- 12. Sort your documents in descending order (highest to lowest)
+SELECT * FROM employee ORDER BY years_working DESC
+
+-- 13. Limit the total number of documents returned
+SELECT * FROM employee LIMIT 5
+
+-- 14. Skip a specified number of rows before returning results
+SELECT * FROM employee LIMIT 5 OFFSET 5
+
+-- 15. A complex combined query using filtering, sorting, and pagination
+SELECT name, post, years_working FROM employee 
+WHERE post LIKE '%QA%' AND years_working >= 1 
+ORDER BY years_working DESC 
+LIMIT 3 OFFSET 0
