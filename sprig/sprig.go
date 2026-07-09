@@ -1,11 +1,13 @@
 package sprig
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"sync"
 
 	"go.etcd.io/bbolt"
+	bbolterrors "go.etcd.io/bbolt/errors"
 )
 
 const (
@@ -99,7 +101,7 @@ func (h *Sprig) DropCollection(name string) error {
 	}
 	defer tx.Rollback()
 
-	if err := tx.DeleteBucket([]byte(name)); err != nil && err != bbolt.ErrBucketNotFound {
+	if err := tx.DeleteBucket([]byte(name)); err != nil && !errors.Is(err, bbolterrors.ErrBucketNotFound) {
 		return err
 	}
 
@@ -119,7 +121,7 @@ func (h *Sprig) DropCollection(name string) error {
 	}
 
 	for _, idx := range indexBuckets {
-		if err := tx.DeleteBucket(idx); err != nil && err != bbolt.ErrBucketNotFound {
+		if err := tx.DeleteBucket(idx); err != nil && !errors.Is(err, bbolterrors.ErrBucketNotFound) {
 			return err
 		}
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	db, err := sprig.New()
 	if err != nil {
@@ -79,9 +79,9 @@ func main() {
 	inserted := 0
 	for i := 0; i < count; i++ {
 		name := names[i%len(names)]
-		post := posts[rand.Intn(len(posts))]
-		years := rand.Intn(21) // 0–20
-		dob := randomDOB()
+		post := posts[rng.Intn(len(posts))]
+		years := rng.Intn(21) // 0–20
+		dob := randomDOB(rng)
 
 		doc := sprig.Map{
 			"name":          name,
@@ -130,10 +130,10 @@ var names = []string{
 	"Zane Kapoor",
 }
 
-func randomDOB() string {
-	year := rand.Intn(25) + 1970 // 1970–1994
-	month := rand.Intn(12) + 1
-	day := rand.Intn(28) + 1
+func randomDOB(rng *rand.Rand) string {
+	year := rng.Intn(25) + 1970 // 1970–1994
+	month := rng.Intn(12) + 1
+	day := rng.Intn(28) + 1
 	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 }
 
