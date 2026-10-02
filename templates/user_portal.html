@@ -9,25 +9,25 @@
 </head>
 <body>
   <div class="login-container">
-    <div class="card login-card" style="max-width: 500px;">
+    <div class="card login-card" style="max-width: 420px;">
       <div class="login-header">
-        <span class="icon" style="font-size: 3rem;">👤</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px; color:var(--text-main);"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         <h1>Welcome, {{.Username}}!</h1>
-        <p>You are logged in as a standard user.</p>
+        <p>User Portal</p>
       </div>
 
-      <div style="background: var(--surface-light); padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid var(--border);">
-        <h3>User Portal Access</h3>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;">
+      <div style="background: var(--bg-surface-hover); padding: 20px; border-radius: var(--radius); margin-bottom: 24px; text-align: center; border: 1px solid var(--border-color);">
+        <h3 style="font-size:14px; margin-bottom:8px;">Standard Access</h3>
+        <p style="color: var(--text-muted); font-size: 13px;">
           This space is for regular users. Administrators have access to the full data management dashboard.
         </p>
       </div>
 
       <div style="display: flex; gap: 10px;">
-        <a class="btn btn-secondary" style="flex: 1; justify-content: center; text-decoration:none; display:flex; align-items:center; justify-content:center;" href="/dashboard">
-          Manage My Data
+        <a class="btn btn-primary" style="flex: 1;" href="/dashboard">
+          Manage Data
         </a>
-        <button class="btn btn-danger" style="flex: 1; justify-content: center;" onclick="logout()">Log Out</button>
+        <button class="btn btn-ghost" style="flex: 1;" onclick="logout()">Log Out</button>
       </div>
     </div>
   </div>
@@ -40,7 +40,6 @@
       document.cookie = "sprig_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       window.location.href = '/login';
     }
-
   </script>
 </body>
 </html>

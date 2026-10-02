@@ -1,14 +1,14 @@
 {{define "query_result.html"}}
 {{if .Error}}
-<div style="padding:12px; background:var(--danger-bg); color:var(--danger); border-radius:6px;">
+<div style="padding:12px; background:var(--danger-bg); border:1px solid var(--danger); color:var(--danger); border-radius:var(--radius); font-size:13px; font-family:var(--font-mono);">
   <strong>Error:</strong> {{.Error}}
 </div>
 {{else}}
-<div class="table-container">
-  <table>
+<div class="table-container" style="border:1px solid var(--border-color); border-radius:var(--radius); overflow:hidden;">
+  <table style="margin:0; width:100%;">
     <thead>
       <tr>
-      {{range .Keys}}<th>{{.}}</th>{{end}}
+      {{range .Keys}}<th style="font-family:var(--font-mono); text-transform:none;">{{.}}</th>{{end}}
       </tr>
     </thead>
     <tbody>
@@ -16,33 +16,38 @@
       {{range .Result.Data}}
       {{$doc := .}}
       <tr>
-        {{range $keys}}<td class="json-cell">{{index $doc .}}</td>{{end}}
+        {{range $keys}}<td class="json-cell" title="{{index $doc .}}">{{index $doc .}}</td>{{end}}
+      </tr>
+      {{end}}
+      {{if eq (len .Result.Data) 0}}
+      <tr>
+        <td colspan="{{len .Keys}}" style="text-align:center; color:var(--text-muted); font-style:italic; padding:24px;">No results found.</td>
       </tr>
       {{end}}
     </tbody>
   </table>
 
   {{if gt .Result.Total 50}}
-  <div class="pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px;">
-    <div class="pagination-controls" style="display:flex; gap:10px;">
+  <div class="pagination" style="padding:12px 16px; border-top:1px solid var(--border-color); background:var(--bg-canvas); margin:0;">
+    <div class="pagination-controls" style="display:flex; gap:6px;">
       {{if .HasPrev}}
-      <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage({{.PrevPage}})">← Previous</button>
+      <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage({{.PrevPage}})">Previous</button>
       {{else}}
-      <button class="btn btn-ghost btn-sm" type="button" disabled style="opacity:0.5; cursor:not-allowed;">← Previous</button>
+      <button class="btn btn-ghost btn-sm" type="button" disabled>Previous</button>
       {{end}}
 
       {{if .HasNext}}
-      <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage({{.NextPage}})">Next →</button>
+      <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage({{.NextPage}})">Next</button>
       {{else}}
-      <button class="btn btn-ghost btn-sm" type="button" disabled style="opacity:0.5; cursor:not-allowed;">Next →</button>
+      <button class="btn btn-ghost btn-sm" type="button" disabled>Next</button>
       {{end}}
     </div>
-    <span class="pagination-info" style="color:var(--text-muted); font-size:0.9rem;">
-      Page {{.Page}} • Showing {{len .Result.Data}} rows (Total: {{.Result.Total}})
+    <span class="pagination-info" style="font-size:12px;">
+      Page {{.Page}} • {{len .Result.Data}} rows (Total: {{.Result.Total}})
     </span>
   </div>
   {{else}}
-  <div style="margin-top:10px; font-size:0.85rem; color:var(--text-muted);">
+  <div style="padding:8px 16px; font-size:12px; color:var(--text-muted); border-top:1px solid var(--border-color); background:var(--bg-canvas);">
     Returned {{len .Result.Data}} rows.
   </div>
   {{end}}

@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	baseURL    = "http://localhost:7777"
-	collection = "loadtest_metrics"
+	baseURL     = "http://localhost:7777"
+	collection  = "loadtest_metrics"
 	defaultUser = "loadtester"
 	defaultPass = "password123"
 )
@@ -39,7 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("🔥 Blasting the server with schema-valid POST requests...")
+	fmt.Println(" Blasting the server with schema-valid POST requests...")
 
 	totalRequests := 25000
 	concurrentWorkers := 200
