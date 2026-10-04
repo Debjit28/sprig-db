@@ -74,7 +74,11 @@
                 <td><span class="badge">{{.Method}}</span></td>
                 <td class="json-cell" title="{{.Path}}">{{.Path}}</td>
                 <td>
-                  <span class="badge" style="border-color:{{if eq .Status 200}}var(--success){{else}}var(--danger){{end}}; color:{{if eq .Status 200}}var(--success){{else}}var(--danger){{end}};">
+                  {{if eq .Status 200}}
+                  <span class="badge" style="border-color:var(--success); color:var(--success);">
+                  {{else}}
+                  <span class="badge" style="border-color:var(--danger); color:var(--danger);">
+                  {{end}}
                     {{.Status}}
                   </span>
                 </td>

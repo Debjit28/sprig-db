@@ -31,13 +31,13 @@
   <div class="pagination" style="padding:16px 24px; border-top:1px solid var(--glass-border); background:rgba(0,0,0,0.2); margin:0;">
     <div class="pagination-controls" style="display:flex; gap:8px;">
       {{if .HasPrev}}
-      <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage({{.PrevPage}})">Previous</button>
+      <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage('{{.PrevPage}}')">Previous</button>
       {{else}}
       <button class="btn btn-ghost btn-sm" type="button" disabled>Previous</button>
       {{end}}
 
       {{if .HasNext}}
-      <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage({{.NextPage}})">Next</button>
+      <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage('{{.NextPage}}')">Next</button>
       {{else}}
       <button class="btn btn-ghost btn-sm" type="button" disabled>Next</button>
       {{end}}
