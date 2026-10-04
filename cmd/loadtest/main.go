@@ -6,22 +6,27 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
 const (
-	baseURL    = "http://localhost:7777"
-	collection = "loadtest_metrics"
-	username   = "loadtester"
-	password   = "password123"
+	baseURL     = "http://localhost:7777"
+	collection  = "loadtest_metrics"
+	defaultUser = "loadtester"
+	defaultPass = "password123"
 )
 
 func main() {
 	fmt.Println("🚀 Starting Sprig-DB API Load Test (schema-validated inserts)...")
 
-	token := getJWT()
+	user := getenv("LOADTEST_USER", defaultUser)
+	pass := getenv("LOADTEST_PASS", defaultPass)
+	fmt.Printf("Authenticating as user: %s\n", user)
+
+	token := getJWT(user, pass)
 	client := newHTTPClient()
 
 	fmt.Println("📋 Creating collection schema for load test...")
@@ -34,7 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("🔥 Blasting the server with schema-valid POST requests...")
+	fmt.Println(" Blasting the server with schema-valid POST requests...")
 
 	totalRequests := 25000
 	concurrentWorkers := 200
@@ -110,8 +115,8 @@ func main() {
 	fmt.Println("-------------------------------------")
 }
 
-func getJWT() string {
-	payload := []byte(fmt.Sprintf(`{"username":"%s","password":"%s"}`, username, password))
+func getJWT(user, pass string) string {
+	payload := []byte(fmt.Sprintf(`{"username":"%s","password":"%s"}`, user, pass))
 	http.Post(baseURL+"/auth/register", "application/json", bytes.NewBuffer(payload))
 
 	resp, err := http.Post(baseURL+"/auth/login", "application/json", bytes.NewBuffer(payload))
@@ -131,6 +136,14 @@ func getJWT() string {
 		panic("could not get JWT token")
 	}
 	return token
+}
+
+func getenv(key, fallback string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	return v
 }
 
 func setupCollection(client *http.Client, token string) error {

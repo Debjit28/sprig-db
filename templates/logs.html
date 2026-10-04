@@ -11,29 +11,48 @@
   <div class="layout-wrapper">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="/dashboard" class="sidebar-brand"><span class="icon">🌱</span> Sprig-DB</a>
+         <a href="/dashboard" class="sidebar-brand">
+           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+           Sprig-DB
+         </a>
       </div>
       <nav class="sidebar-nav">
-        <a href="/dashboard" class="sidebar-link">📁 Collections</a>
-        <a href="/dashboard/settings" class="sidebar-link">⚙️ Settings</a>
-        <a href="/dashboard/logs" class="sidebar-link active">📊 Logs</a>
+         <a href="/dashboard" class="sidebar-link">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+           Collections
+         </a>
+         <a href="/dashboard/settings" class="sidebar-link">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+           Settings
+         </a>
+         <a href="/dashboard/logs" class="sidebar-link active">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+           Logs
+         </a>
       </nav>
-      <div class="sidebar-user" style="position: absolute; bottom: 24px; width: calc(100% - 48px);">
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; text-align: center;">
-          👤 <strong>{{.Username}}</strong>
-        </div>
-        <button class="btn btn-danger btn-sm" style="width: 100%; justify-content: center;" onclick="logout()">Logout</button>
+      <div class="sidebar-user">
+         <div id="user-display" style="display:flex; align-items:center; gap:8px; font-size: 13px; color: var(--text-main); margin-bottom: 12px; font-weight:500;">
+           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+           <div>
+             {{.Username}}
+             <div style="font-size:11px; color:var(--text-muted); font-weight:400;">Admin</div>
+           </div>
+         </div>
+         <button class="btn btn-ghost" style="width: 100%;" onclick="logout()">
+           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+           Sign Out
+         </button>
       </div>
     </aside>
 
     <main class="main-content">
-      <div class="page-header" style="margin-top: 0;">
+      <div class="page-header">
         <h1 class="page-title">Logs</h1>
       </div>
 
-      <div class="card" style="max-width: 980px;">
+      <div class="card">
         {{if .Logs}}
-        <div style="overflow:auto;">
+        <div class="table-container" style="border:none;">
           <table>
             <thead>
               <tr>
@@ -47,11 +66,15 @@
             <tbody>
               {{range .Logs}}
               <tr>
-                <td>{{.Time}}</td>
-                <td>{{.Method}}</td>
-                <td class="json-cell">{{.Path}}</td>
-                <td>{{.Status}}</td>
-                <td class="json-cell">{{.Error}}</td>
+                <td style="white-space:nowrap; font-family:var(--font-mono); font-size:12px;">{{.Time}}</td>
+                <td><span class="badge">{{.Method}}</span></td>
+                <td class="json-cell" title="{{.Path}}">{{.Path}}</td>
+                <td>
+                  <span class="badge" style="border-color:{{if eq .Status 200}}var(--success){{else}}var(--danger){{end}};">
+                    {{.Status}}
+                  </span>
+                </td>
+                <td class="json-cell" style="color:var(--danger);" title="{{.Error}}">{{.Error}}</td>
               </tr>
               {{end}}
             </tbody>
@@ -59,28 +82,28 @@
         </div>
 
         {{if gt .Total 50}}
-        <div class="pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
-          <div class="pagination-controls" style="display:flex; gap:10px;">
+        <div class="pagination">
+          <div class="pagination-controls">
             {{if .HasPrev}}
-            <a href="/dashboard/logs?page={{.PrevPage}}" class="btn btn-ghost btn-sm">← Previous</a>
+            <a href="/dashboard/logs?page={{.PrevPage}}" class="btn btn-ghost btn-sm">Previous</a>
             {{else}}
-            <button class="btn btn-ghost btn-sm" disabled style="opacity:0.5; cursor:not-allowed;">← Previous</button>
+            <button class="btn btn-ghost btn-sm" disabled>Previous</button>
             {{end}}
 
             {{if .HasNext}}
-            <a href="/dashboard/logs?page={{.NextPage}}" class="btn btn-ghost btn-sm">Next →</a>
+            <a href="/dashboard/logs?page={{.NextPage}}" class="btn btn-ghost btn-sm">Next</a>
             {{else}}
-            <button class="btn btn-ghost btn-sm" disabled style="opacity:0.5; cursor:not-allowed;">Next →</button>
+            <button class="btn btn-ghost btn-sm" disabled>Next</button>
             {{end}}
           </div>
-          <span class="pagination-info" style="color:var(--text-muted); font-size:0.9rem;">
-            Page {{.Page}} • Showing {{len .Logs}} logs (Total: {{.Total}})
+          <span class="pagination-info">
+            {{.Page}} / {{.Page}} • Showing {{len .Logs}} logs
           </span>
         </div>
         {{end}}
         {{else}}
         <div class="empty-state">
-          <span class="icon">🧾</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
           <p>No logs yet.</p>
         </div>
         {{end}}
@@ -100,4 +123,3 @@
 </body>
 </html>
 {{end}}
-

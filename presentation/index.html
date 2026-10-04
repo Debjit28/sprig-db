@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprig-DB — Copyright Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --glass: rgba(255, 255, 255, 0.04);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-green: #10b981;
+      --accent-emerald: #34d399;
+      --accent-blue: #3b82f6;
+      --accent-indigo: #6366f1;
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --gradient-main: linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%);
+      --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+      --gradient-cool: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Slide Container ── */
+    .slides-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 80px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(60px);
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+    }
+
+    .slide.exit-left {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(-60px);
+    }
+
+    /* ── Background Effects ── */
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .slide > * { position: relative; z-index: 1; }
+
+    /* ── Slide Number ── */
+    .slide-number {
+      position: fixed;
+      bottom: 28px;
+      right: 40px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      z-index: 100;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Progress Bar ── */
+    .progress-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: var(--gradient-main);
+      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      border-radius: 0 2px 0 0;
+    }
+
+    /* ── Typography ── */
+    .slide-label {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent-green);
+      margin-bottom: 16px;
+      padding: 4px 12px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 20px;
+    }
+
+    h1 {
+      font-size: 64px;
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin-bottom: 12px;
+    }
+
+    h1 .gradient-text {
+      background: var(--gradient-main);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    h2 {
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -1px;
+      margin-bottom: 32px;
+    }
+
+    h2 .gradient-text {
+      background: var(--gradient-main);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 700px;
+      margin-bottom: 40px;
+    }
+
+    p, li {
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+
+    /* ── Meta Row ── */
+    .meta-row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .meta-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      backdrop-filter: blur(12px);
+    }
+
+    .meta-chip .chip-icon {
+      font-size: 18px;
+    }
+
+    .meta-chip .chip-value {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    /* ── Glass Card ── */
+    .glass-card {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      backdrop-filter: blur(20px);
+      transition: border-color 0.3s, transform 0.3s;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .glass-card h3 {
+      margin-bottom: 16px;
+    }
+
+    /* ── Grid Layouts ── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 8px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-top: 8px;
+    }
+
+    /* ── Problem Cards ── */
+    .problem-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 0;
+    }
+
+    .problem-item .icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .problem-item .label {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .problem-item .desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ── Comparison Table ── */
+    .comparison-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 12px;
+      font-size: 15px;
+    }
+
+    .comparison-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .comparison-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .comparison-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .check { color: var(--accent-green); font-weight: 700; }
+    .cross { color: var(--accent-red); opacity: 0.6; }
+
+    /* ── Stats Row ── */
+    .stat-card {
+      text-align: center;
+      padding: 24px 16px;
+    }
+
+    .stat-card .stat-value {
+      font-size: 36px;
+      font-weight: 900;
+      background: var(--gradient-main);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-card .stat-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ── Novelty Component Table ── */
+    .component-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      gap: 16px;
+    }
+
+    .component-row:last-child { border-bottom: none; }
+
+    .component-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-emerald);
+      min-width: 180px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .component-lines {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-blue);
+      min-width: 80px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .component-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      flex: 1;
+    }
+
+    /* ── User Segment Cards ── */
+    .user-card {
+      padding: 20px 24px;
+    }
+
+    .user-card .user-icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .user-card .user-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .user-card .user-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── TRL Badge ── */
+    .trl-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(59, 130, 246, 0.15));
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent-emerald);
+      margin-bottom: 24px;
+    }
+
+    /* ── Next Steps List ── */
+    .next-steps-list {
+      list-style: none;
+      margin-top: 12px;
+    }
+
+    .next-steps-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      font-size: 15px;
+    }
+
+    .next-steps-list .step-num {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--gradient-main);
+      font-size: 13px;
+      font-weight: 800;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    /* ── Copyright Claim Box ── */
+    .copyright-claim {
+      margin-top: 24px;
+      padding: 20px 28px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(99, 102, 241, 0.08));
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+
+    .copyright-claim strong {
+      color: var(--accent-emerald);
+    }
+
+    /* ── Checkmark List ── */
+    .check-list {
+      list-style: none;
+      margin-top: 8px;
+    }
+
+    .check-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 15px;
+    }
+
+    .check-list li::before {
+      content: '✓';
+      color: var(--accent-green);
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    /* ── Keyboard Hint ── */
+    .keyboard-hint {
+      position: fixed;
+      bottom: 22px;
+      left: 40px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      z-index: 100;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 24px;
+      padding: 0 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* ── Fade-in animation for children ── */
+    .slide.active .fade-in {
+      animation: fadeInUp 0.5s ease forwards;
+      opacity: 0;
+    }
+
+    .slide.active .fade-in:nth-child(1) { animation-delay: 0.05s; }
+    .slide.active .fade-in:nth-child(2) { animation-delay: 0.15s; }
+    .slide.active .fade-in:nth-child(3) { animation-delay: 0.25s; }
+    .slide.active .fade-in:nth-child(4) { animation-delay: 0.35s; }
+    .slide.active .fade-in:nth-child(5) { animation-delay: 0.45s; }
+    .slide.active .fade-in:nth-child(6) { animation-delay: 0.55s; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1200px) {
+      .slide { padding: 40px 48px; }
+      h1 { font-size: 48px; }
+      h2 { font-size: 34px; }
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="slides-container">
+
+  <!-- ═══════════════ SLIDE 1 — Title ═══════════════ -->
+  <div class="slide active" id="slide-1">
+    <div class="bg-orb" style="width:500px;height:500px;background:#10b981;top:-10%;right:10%;"></div>
+    <div class="bg-orb" style="width:400px;height:400px;background:#6366f1;bottom:5%;left:-5%;"></div>
+
+    <span class="slide-label fade-in">Copyright · Literary Work — Computer Program</span>
+    <h1 class="fade-in">🌱 <span class="gradient-text">Sprig-DB</span></h1>
+    <p class="subtitle fade-in">
+      Ultra-lightweight, embedded key-value document database built entirely in Go — with a built-in REST API, admin dashboard, and multi-tenant authentication.
+    </p>
+
+    <div class="meta-row fade-in">
+      <div class="meta-chip">
+        <span class="chip-icon">👤</span>
+        <span>Author:</span>
+        <span class="chip-value">Debjit</span>
+      </div>
+      <div class="meta-chip">
+        <span class="chip-icon">🔧</span>
+        <span>Language:</span>
+        <span class="chip-value">Go (Golang)</span>
+      </div>
+      <div class="meta-chip">
+        <span class="chip-icon">📏</span>
+        <span>Codebase:</span>
+        <span class="chip-value">4,000+ LOC</span>
+      </div>
+      <div class="meta-chip">
+        <span class="chip-icon">📜</span>
+        <span>License:</span>
+        <span class="chip-value">MIT</span>
+      </div>
+      <div class="meta-chip">
+        <span class="chip-icon">🚀</span>
+        <span>Live:</span>
+        <span class="chip-value">sprig-db.onrender.com</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SLIDE 2 — Problem Statement ═══════════════ -->
+  <div class="slide" id="slide-2">
+    <div class="bg-orb" style="width:450px;height:450px;background:#ef4444;top:5%;right:-5%;"></div>
+    <div class="bg-orb" style="width:350px;height:350px;background:#f59e0b;bottom:10%;left:5%;"></div>
+
+    <span class="slide-label fade-in">Slide 2</span>
+    <h2 class="fade-in">🎯 Problem Statement & <span class="gradient-text">Relevance</span></h2>
+
+    <div class="grid-2 fade-in">
+      <div class="glass-card">
+        <h3>The Problem</h3>
+        <p style="font-size:15px;margin-bottom:16px;">Modern apps face a <strong style="color:var(--accent-amber)">setup complexity barrier</strong> for lightweight data persistence:</p>
+        <div class="problem-item">
+          <span class="icon">🗄️</span>
+          <div>
+            <div class="label">SQLite</div>
+            <div class="desc">Requires SQL knowledge & rigid schemas upfront</div>
+          </div>
+        </div>
+        <div class="problem-item">
+          <span class="icon">🍃</span>
+          <div>
+            <div class="label">MongoDB</div>
+            <div class="desc">Needs a separate server, heavy dependencies</div>
+          </div>
+        </div>
+        <div class="problem-item">
+          <span class="icon">⚡</span>
+          <div>
+            <div class="label">Redis</div>
+            <div class="desc">In-memory only, no persistent document storage</div>
+          </div>
+        </div>
+        <div class="problem-item">
+          <span class="icon">☁️</span>
+          <div>
+            <div class="label">Firebase / Supabase</div>
+            <div class="desc">Requires internet & cloud dependency</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <h3>The Gap</h3>
+        <p style="font-size:15px;margin-bottom:20px;">No single-binary, zero-configuration, embeddable document database for Go that provides:</p>
+        <ul class="check-list">
+          <li>Schema-flexible JSON document storage</li>
+          <li>Built-in REST API & admin dashboard</li>
+          <li>JWT-secured multi-tenant access</li>
+          <li>SQL-like querying on NoSQL data</li>
+          <li>Automatic secondary indexing</li>
+          <li>Zero external dependencies</li>
+        </ul>
+
+        <h3 style="margin-top:24px;">Relevance</h3>
+        <div class="problem-item">
+          <span class="icon">🔌</span>
+          <div>
+            <div class="label">Microservices & Edge/IoT</div>
+            <div class="desc">Lightweight embedded DB for constrained environments</div>
+          </div>
+        </div>
+        <div class="problem-item">
+          <span class="icon">📚</span>
+          <div>
+            <div class="label">Educational</div>
+            <div class="desc">Learn DB internals (B+ trees, ACID, indexing)</div>
+          </div>
+        </div>
+        <div class="problem-item">
+          <span class="icon">⚡</span>
+          <div>
+            <div class="label">Rapid Prototyping</div>
+            <div class="desc">Store structured data with zero setup</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SLIDE 3 — Novelty ═══════════════ -->
+  <div class="slide" id="slide-3">
+    <div class="bg-orb" style="width:500px;height:500px;background:#8b5cf6;top:-5%;left:30%;"></div>
+    <div class="bg-orb" style="width:350px;height:350px;background:#10b981;bottom:-5%;right:10%;"></div>
+
+    <span class="slide-label fade-in">Slide 3</span>
+    <h2 class="fade-in">💡 Core Novelty & <span class="gradient-text">Key Differentiators</span></h2>
+
+    <div class="grid-2 fade-in">
+      <div class="glass-card" style="padding:20px 24px;">
+        <h3>Original Contributions</h3>
+        <div class="component-row">
+          <span class="component-name">sprig/</span>
+          <span class="component-lines">~600</span>
+          <span class="component-desc">Collections, filter pipeline, pagination, secondary indexing</span>
+        </div>
+        <div class="component-row">
+          <span class="component-name">api/</span>
+          <span class="component-lines">~2,200</span>
+          <span class="component-desc">CRUD, filter-map queries, schema engine, SQL parser</span>
+        </div>
+        <div class="component-row">
+          <span class="component-name">auth.go</span>
+          <span class="component-lines">~410</span>
+          <span class="component-desc">JWT + Cookie dual auth, CAPTCHA, password reset</span>
+        </div>
+        <div class="component-row">
+          <span class="component-name">templates/</span>
+          <span class="component-lines">~990</span>
+          <span class="component-desc">HTMX glassmorphism dashboard with live query console</span>
+        </div>
+        <div class="component-row">
+          <span class="component-name">multi-tenant</span>
+          <span class="component-lines">built-in</span>
+          <span class="component-desc"><code style="color:var(--accent-amber);font-family:'JetBrains Mono',monospace;font-size:13px;">_owner</code> field-based tenant isolation</span>
+        </div>
+        <div class="component-row">
+          <span class="component-name">tests/</span>
+          <span class="component-lines">~450</span>
+          <span class="component-desc">Concurrent safety, benchmarks, index verification</span>
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding:20px 24px;">
+        <h3>bbolt (raw KV) vs Sprig-DB (this work)</h3>
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>bbolt</th>
+              <th>Sprig-DB</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Collections</td>
+              <td class="cross">✗</td>
+              <td class="check">✓</td>
+            </tr>
+            <tr>
+              <td>Schema Validation</td>
+              <td class="cross">✗</td>
+              <td class="check">✓</td>
+            </tr>
+            <tr>
+              <td>REST API</td>
+              <td class="cross">✗</td>
+              <td class="check">✓</td>
+            </tr>
+            <tr>
+              <td>SQL-like Queries</td>
+              <td class="cross">✗</td>
+              <td class="check">✓</td>
+            </tr>
+            <tr>
+              <td>Auth & Multi-tenancy</td>
+              <td class="cross">✗</td>
+              <td class="check">✓</td>
+            </tr>
+            <tr>
+              <td>Admin Dashboard</td>
+              <td class="cross">✗</td>
+              <td class="check">✓</td>
+            </tr>
+            <tr>
+              <td>Secondary Indexes</td>
+              <td class="cross">✗</td>
+              <td class="check">✓</td>
+            </tr>
+            <tr>
+              <td>Pagination</td>
+              <td class="cross">✗</td>
+              <td class="check">✓</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SLIDE 4 — Application & TRL ═══════════════ -->
+  <div class="slide" id="slide-4">
+    <div class="bg-orb" style="width:400px;height:400px;background:#06b6d4;top:10%;right:5%;"></div>
+    <div class="bg-orb" style="width:300px;height:300px;background:#ec4899;bottom:5%;left:15%;"></div>
+
+    <span class="slide-label fade-in">Slide 4</span>
+    <h2 class="fade-in">🚀 Application, TRL & <span class="gradient-text">Potential Users</span></h2>
+
+    <div class="fade-in" style="display:flex;align-items:center;gap:24px;margin-bottom:20px;">
+      <div class="trl-badge">
+        <span style="font-size:24px;">🎯</span>
+        TRL 7 — System Prototype in Operational Environment
+      </div>
+    </div>
+
+    <div class="grid-2 fade-in" style="margin-bottom:20px;">
+      <div class="glass-card" style="padding:20px 24px;">
+        <h3>Validation</h3>
+        <ul class="check-list">
+          <li>Deployed live on Render.com cloud</li>
+          <li>Concurrent read/write stress tested</li>
+          <li>Dockerized for production deployment</li>
+          <li>12+ unit tests + benchmark suite</li>
+        </ul>
+      </div>
+      <div class="glass-card" style="padding:20px 24px;">
+        <h3>Industry Relevance</h3>
+        <ul class="check-list">
+          <li>Embedded DB market — projected $13B+ by 2028</li>
+          <li>Growing demand for edge-native data stores</li>
+          <li>Serverless-friendly single-binary architecture</li>
+          <li>Open-source MIT enables adoption</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid-3 fade-in" style="grid-template-columns: repeat(5, 1fr);">
+      <div class="glass-card user-card">
+        <div class="user-icon">👨‍💻</div>
+        <div class="user-title">Go Developers</div>
+        <div class="user-desc">Embed as a library for instant persistent storage</div>
+      </div>
+      <div class="glass-card user-card">
+        <div class="user-icon">🎓</div>
+        <div class="user-title">Students</div>
+        <div class="user-desc">Learn DB internals with readable Go code</div>
+      </div>
+      <div class="glass-card user-card">
+        <div class="user-icon">🚀</div>
+        <div class="user-title">Startup MVPs</div>
+        <div class="user-desc">Zero-config backend with auth & dashboard</div>
+      </div>
+      <div class="glass-card user-card">
+        <div class="user-icon">📡</div>
+        <div class="user-title">IoT / Edge</div>
+        <div class="user-desc">Single-binary store for constrained devices</div>
+      </div>
+      <div class="glass-card user-card">
+        <div class="user-icon">📖</div>
+        <div class="user-title">Educators</div>
+        <div class="user-desc">Teaching tool for database courses</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SLIDE 5 — Status & Next Steps ═══════════════ -->
+  <div class="slide" id="slide-5">
+    <div class="bg-orb" style="width:500px;height:500px;background:#10b981;top:-10%;left:20%;"></div>
+    <div class="bg-orb" style="width:400px;height:400px;background:#3b82f6;bottom:-5%;right:-5%;"></div>
+
+    <span class="slide-label fade-in">Slide 5</span>
+    <h2 class="fade-in">📈 Status of Work & <span class="gradient-text">Next Steps</span></h2>
+
+    <div class="grid-2 fade-in" style="margin-bottom:20px;">
+      <div class="glass-card">
+        <h3>Current Status ✅</h3>
+        <ul class="check-list">
+          <li>Fully functional — Core engine, API, Auth, Dashboard, SQL Parser</li>
+          <li>Deployed live at sprig-db.onrender.com</li>
+          <li>12+ unit tests, concurrent safety tests, benchmarks</li>
+          <li>Open source on GitHub under MIT License</li>
+          <li>Comprehensive README & architecture docs</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Planned Next Steps 🔜</h3>
+        <ul class="next-steps-list">
+          <li>
+            <span class="step-num">1</span>
+            <span>Advanced Query Operators — <code style="font-family:'JetBrains Mono',monospace;color:var(--accent-amber);font-size:13px;">$gt, $lt, $in</code>, AND/OR chaining</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span>Data Export — CSV/JSON bulk export from dashboard</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span>Replication — Leader-follower read replicas</span>
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <span>Plugin System — Custom middleware hooks</span>
+          </li>
+          <li>
+            <span class="step-num">5</span>
+            <span>Community Building — Package registry & tutorials</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="fade-in" style="display:flex;gap:24px;margin-bottom:20px;">
+      <div class="glass-card stat-card" style="flex:1;">
+        <div class="stat-value">19</div>
+        <div class="stat-label">Go Files</div>
+      </div>
+      <div class="glass-card stat-card" style="flex:1;">
+        <div class="stat-value">4,067</div>
+        <div class="stat-label">Lines of Go</div>
+      </div>
+      <div class="glass-card stat-card" style="flex:1;">
+        <div class="stat-value">7</div>
+        <div class="stat-label">HTML Templates</div>
+      </div>
+      <div class="glass-card stat-card" style="flex:1;">
+        <div class="stat-value">693</div>
+        <div class="stat-label">Lines of CSS</div>
+      </div>
+      <div class="glass-card stat-card" style="flex:1;">
+        <div class="stat-value">12+</div>
+        <div class="stat-label">Test Cases</div>
+      </div>
+    </div>
+
+    <div class="copyright-claim fade-in">
+      <strong>Copyright Claim:</strong> All source code, documentation, HTML templates, CSS styling, and architectural design are <strong>original creative expressions</strong> authored solely by <strong>Debjit</strong>. The work builds upon open-source dependencies (bbolt, Echo, jwt-go) but all application logic, API design, schema engine, query parser, dashboard UI, and multi-tenancy system are entirely original.
+    </div>
+  </div>
+
+</div>
+
+<!-- Progress & Navigation -->
+<div class="progress-bar" id="progress-bar" style="width: 20%;"></div>
+<div class="slide-number" id="slide-number">01 / 05</div>
+<div class="keyboard-hint">
+  <span class="key">←</span><span class="key">→</span> Navigate
+  <span style="margin-left:8px;">or click</span>
+</div>
+
+<script>
+  const totalSlides = 5;
+  let current = 1;
+
+  function goToSlide(n) {
+    if (n < 1 || n > totalSlides) return;
+
+    const prev = document.getElementById('slide-' + current);
+    const next = document.getElementById('slide-' + n);
+
+    // Remove all state classes
+    document.querySelectorAll('.slide').forEach(s => {
+      s.classList.remove('active', 'exit-left');
+    });
+
+    if (n > current) {
+      prev.classList.add('exit-left');
+    }
+
+    next.classList.add('active');
+    current = n;
+
+    // Update progress bar
+    const pct = (current / totalSlides) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+
+    // Update slide number
+    document.getElementById('slide-number').textContent =
+      String(current).padStart(2, '0') + ' / ' + String(totalSlides).padStart(2, '0');
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      goToSlide(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+      e.preventDefault();
+      goToSlide(current - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goToSlide(1);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goToSlide(totalSlides);
+    }
+  });
+
+  // Click to advance
+  document.addEventListener('click', (e) => {
+    // Don't advance if clicking on interactive elements
+    if (e.target.closest('a, button, input, .keyboard-hint')) return;
+
+    const x = e.clientX;
+    if (x > window.innerWidth * 0.3) {
+      goToSlide(current + 1);
+    } else {
+      goToSlide(current - 1);
+    }
+  });
+</script>
+
+</body>
+</html>
