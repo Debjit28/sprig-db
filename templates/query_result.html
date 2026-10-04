@@ -1,14 +1,14 @@
 {{define "query_result.html"}}
 {{if .Error}}
-<div style="padding:12px; background:var(--danger-bg); border:1px solid var(--danger); color:var(--danger); border-radius:var(--radius); font-size:13px; font-family:var(--font-mono);">
+<div style="padding:16px; background:var(--danger-bg); border:1px solid rgba(239, 68, 68, 0.3); color:#f87171; border-radius:var(--radius); font-size:14px; font-family:var(--font-mono); box-shadow: 0 4px 12px rgba(239,68,68,0.1);">
   <strong>Error:</strong> {{.Error}}
 </div>
 {{else}}
-<div class="table-container" style="border:1px solid var(--border-color); border-radius:var(--radius); overflow:hidden;">
+<div class="table-container" style="border:1px solid var(--glass-border); border-radius:var(--radius-lg); overflow:hidden;">
   <table style="margin:0; width:100%;">
     <thead>
       <tr>
-      {{range .Keys}}<th style="font-family:var(--font-mono); text-transform:none;">{{.}}</th>{{end}}
+      {{range .Keys}}<th style="font-family:var(--font-mono); text-transform:uppercase;">{{.}}</th>{{end}}
       </tr>
     </thead>
     <tbody>
@@ -21,15 +21,15 @@
       {{end}}
       {{if eq (len .Result.Data) 0}}
       <tr>
-        <td colspan="{{len .Keys}}" style="text-align:center; color:var(--text-muted); font-style:italic; padding:24px;">No results found.</td>
+        <td colspan="{{len .Keys}}" style="text-align:center; color:var(--text-muted); font-style:italic; padding:32px;">No results match your query.</td>
       </tr>
       {{end}}
     </tbody>
   </table>
 
   {{if gt .Result.Total 50}}
-  <div class="pagination" style="padding:12px 16px; border-top:1px solid var(--border-color); background:var(--bg-canvas); margin:0;">
-    <div class="pagination-controls" style="display:flex; gap:6px;">
+  <div class="pagination" style="padding:16px 24px; border-top:1px solid var(--glass-border); background:rgba(0,0,0,0.2); margin:0;">
+    <div class="pagination-controls" style="display:flex; gap:8px;">
       {{if .HasPrev}}
       <button class="btn btn-ghost btn-sm" type="button" onclick="goToQueryPage({{.PrevPage}})">Previous</button>
       {{else}}
@@ -42,13 +42,13 @@
       <button class="btn btn-ghost btn-sm" type="button" disabled>Next</button>
       {{end}}
     </div>
-    <span class="pagination-info" style="font-size:12px;">
+    <span class="pagination-info" style="font-size:13px; color:var(--text-muted);">
       Page {{.Page}} • {{len .Result.Data}} rows (Total: {{.Result.Total}})
     </span>
   </div>
   {{else}}
-  <div style="padding:8px 16px; font-size:12px; color:var(--text-muted); border-top:1px solid var(--border-color); background:var(--bg-canvas);">
-    Returned {{len .Result.Data}} rows.
+  <div style="padding:12px 24px; font-size:13px; color:var(--text-muted); border-top:1px solid var(--glass-border); background:rgba(0,0,0,0.2);">
+    Returned {{len .Result.Data}} rows in total.
   </div>
   {{end}}
 </div>
