@@ -75,11 +75,11 @@ func main() {
 				}
 				_, _ = db.Coll("_logs").Insert(sprig.Map{
 					"_owner": owner,
-					"ts":      time.Now().UnixNano(),
-					"method":  req.Method,
-					"path":     req.URL.Path,
-					"status":  status,
-					"error":   errMsg,
+					"ts":     time.Now().UnixNano(),
+					"method": req.Method,
+					"path":   req.URL.Path,
+					"status": status,
+					"error":  errMsg,
 				})
 			}
 

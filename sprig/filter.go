@@ -110,6 +110,48 @@ func (f *Filter) Insert(values Map) (uint64, error) {
 	return id, tx.Commit()
 }
 
+// InsertMany inserts multiple documents into the collection in a single
+// transaction. All succeed or none are committed (atomic).
+func (f *Filter) InsertMany(docs []Map) ([]uint64, error) {
+	f.hopper.mu.Lock()
+	defer f.hopper.mu.Unlock()
+
+	tx, err := f.hopper.db.Begin(true)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	collBucket, err := tx.CreateBucketIfNotExists([]byte(f.coll))
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]uint64, 0, len(docs))
+	for _, doc := range docs {
+		id, err := collBucket.NextSequence()
+		if err != nil {
+			return nil, err
+		}
+		b, err := f.hopper.Encoder.Encode(doc)
+		if err != nil {
+			return nil, err
+		}
+		if err := collBucket.Put(uint64Bytes(id), b); err != nil {
+			return nil, err
+		}
+		if err := updateIndexes(tx, f.coll, id, doc); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
 // Find returns paginated, filtered query results.
 // Uses index-accelerated lookups when a single-field Eq filter is present.
 func (f *Filter) Find() (*QueryResult, error) {

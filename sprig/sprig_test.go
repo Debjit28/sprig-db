@@ -420,11 +420,13 @@ func BenchmarkInsertMassive(b *testing.B) {
 	defer db.DropDatabase("test_bench_insert")
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	i := 0
+	for b.Loop() {
 		_, err := db.Coll("test_bench_coll").Insert(Map{"index": i, "payload": "this is a test payload for benchmarking the storage capabilities of sprig-db"})
 		if err != nil {
 			b.Fatal(err)
 		}
+		i++
 	}
 }
 
@@ -440,7 +442,7 @@ func BenchmarkFindMassive(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := db.Coll("test_bench_coll").Eq(Map{"username": "benchmark_user"}).Find()
 		if err != nil {
 			b.Fatal(err)

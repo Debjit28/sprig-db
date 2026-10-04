@@ -186,14 +186,32 @@
     async function insertDoc(e) {
       e.preventDefault();
       const jsonStr = document.getElementById('doc-json').value;
+      let parsed;
       try {
-        JSON.parse(jsonStr);
-      } catch {
+        parsed = JSON.parse(jsonStr);
+      } catch (parseErr) {
         const el = document.getElementById('insert-error');
-        el.textContent = 'Invalid JSON format';
+        el.textContent = 'Invalid JSON format: ' + parseErr.message;
         el.style.display = 'block';
         return;
       }
+      // Client-side guard: must be object or array of objects.
+      if (Array.isArray(parsed)) {
+        for (let i = 0; i < parsed.length; i++) {
+          if (typeof parsed[i] !== 'object' || parsed[i] === null || Array.isArray(parsed[i])) {
+            const el = document.getElementById('insert-error');
+            el.textContent = `Item ${i} is not a JSON object`;
+            el.style.display = 'block';
+            return;
+          }
+        }
+      } else if (typeof parsed !== 'object' || parsed === null) {
+        const el = document.getElementById('insert-error');
+        el.textContent = 'Input must be a JSON object or an array of objects';
+        el.style.display = 'block';
+        return;
+      }
+
       const headers = {'Content-Type': 'application/json'};
       if (token) headers['Authorization'] = 'Bearer ' + token;
 
@@ -204,12 +222,17 @@
         body: jsonStr
       });
       if (res.ok) {
-        showToast('Document inserted!', 'success');
+        const data = await res.json();
+        const count = data.ids ? data.ids.length : 1;
+        const noun = count === 1 ? 'document' : 'documents';
+        showToast(`${count} ${noun} inserted!`, 'success');
         hideInsertModal();
         setTimeout(() => window.location.reload(), 500);
       } else {
         const data = await res.json();
-        showToast(data.error || 'Insert failed', 'error');
+        const el = document.getElementById('insert-error');
+        el.textContent = data.error || 'Insert failed';
+        el.style.display = 'block';
       }
     }
 

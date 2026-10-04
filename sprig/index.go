@@ -17,7 +17,7 @@ var sensitiveFields = map[string]bool{
 }
 
 func indexBucketName(coll, field string) []byte {
-	return []byte(fmt.Sprintf("_idx_%s_%s", coll, field))
+	return fmt.Appendf(nil, "_idx_%s_%s", coll, field)
 }
 
 // updateIndexes adds or updates index entries for all fields of a document.
@@ -31,7 +31,7 @@ func updateIndexes(tx *bbolt.Tx, coll string, id uint64, doc Map) error {
 		if err != nil {
 			return err
 		}
-		key := []byte(fmt.Sprintf("%v:%d", value, id))
+		key := fmt.Appendf(nil, "%v:%d", value, id)
 		if err := idxBucket.Put(key, uint64Bytes(id)); err != nil {
 			return err
 		}
@@ -50,7 +50,7 @@ func removeIndexes(tx *bbolt.Tx, coll string, id uint64, doc Map) error {
 		if idxBucket == nil {
 			continue
 		}
-		key := []byte(fmt.Sprintf("%v:%d", value, id))
+		key := fmt.Appendf(nil, "%v:%d", value, id)
 		if err := idxBucket.Delete(key); err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ func lookupByIndex(tx *bbolt.Tx, coll, field string, value any) ([]uint64, error
 		return nil, nil // no index exists, caller should fall back to full scan
 	}
 
-	prefix := []byte(fmt.Sprintf("%v:", value))
+	prefix := fmt.Appendf(nil, "%v:", value)
 	var ids []uint64
 	c := idxBucket.Cursor()
 	for k, v := c.Seek(prefix); k != nil; k, v = c.Next() {

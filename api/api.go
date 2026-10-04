@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,6 +12,39 @@ import (
 	"github.com/Debjit28/sprig-db/sprig"
 	"github.com/labstack/echo/v4"
 )
+
+// maxBulkInsert is the maximum number of documents allowed in a single bulk
+// insert request.
+const maxBulkInsert = 100
+
+// jsonSyntaxMessage returns a user-friendly error string for JSON parse errors.
+// For syntax errors it includes the byte offset translated to line and column.
+func jsonSyntaxMessage(body []byte, err error) string {
+	if se, ok := err.(*json.SyntaxError); ok {
+		line, col := offsetToLineCol(body, se.Offset)
+		return fmt.Sprintf("invalid JSON at line %d, column %d", line, col)
+	}
+	if ute, ok := err.(*json.UnmarshalTypeError); ok {
+		line, col := offsetToLineCol(body, ute.Offset)
+		return fmt.Sprintf("invalid JSON value at line %d, column %d: expected %s", line, col, ute.Type)
+	}
+	return fmt.Sprintf("invalid JSON: %s", err.Error())
+}
+
+// offsetToLineCol translates a byte offset into 1-based line and column numbers.
+func offsetToLineCol(data []byte, offset int64) (line, col int) {
+	line = 1
+	col = 1
+	for i := int64(0); i < offset && i < int64(len(data)); i++ {
+		if data[i] == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+	}
+	return
+}
 
 type Server struct {
 	db      *sprig.Sprig
@@ -152,7 +187,10 @@ func (s *Server) HandleDeleteCollection(c echo.Context) error {
 	return c.JSON(http.StatusOK, sprig.Map{"message": "collection deleted", "collection": collname})
 }
 
-// HandlePostInsert handles POST /api/:collname — Insert a document.
+// HandlePostInsert handles POST /api/:collname — Insert one or many documents.
+// Accepts a single JSON object or a JSON array of objects.
+// A single object returns {"id": N}. An array returns {"ids": [...]}.
+// Arrays are limited to 100 documents per request and are inserted atomically.
 func (s *Server) HandlePostInsert(c echo.Context) error {
 	username, err := currentUsername(c)
 	if err != nil {
@@ -163,29 +201,93 @@ func (s *Server) HandlePostInsert(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "collection name is required"})
 	}
 
-	var data sprig.Map
-	if err := json.NewDecoder(c.Request().Body).Decode(&data); err != nil {
-		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "invalid JSON body"})
+	// Read the raw body so we can give precise JSON error messages.
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "failed to read request body"})
 	}
-	if len(data) == 0 {
+	body = bytes.TrimSpace(body)
+	if len(body) == 0 {
 		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "request body cannot be empty"})
 	}
-	delete(data, "id")
 
 	schema, err := s.schemas.Get(username, collname)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "schema does not exist for collection"})
 	}
-	if err := ValidateDocument(data, schema, false); err != nil {
-		return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
+
+	// Determine whether the payload is an object or an array.
+	if body[0] == '{' {
+		// --- Single object ---
+		var data sprig.Map
+		if err := json.Unmarshal(body, &data); err != nil {
+			return c.JSON(http.StatusBadRequest, sprig.Map{"error": jsonSyntaxMessage(body, err)})
+		}
+		if len(data) == 0 {
+			return c.JSON(http.StatusBadRequest, sprig.Map{"error": "request body cannot be empty"})
+		}
+		delete(data, "id")
+
+		if err := ValidateDocument(data, schema, false); err != nil {
+			return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
+		}
+
+		data["_owner"] = username
+		id, err := s.db.Coll(collname).Insert(data)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, sprig.Map{"error": err.Error()})
+		}
+		return c.JSON(http.StatusCreated, sprig.Map{"id": id})
 	}
 
-	data["_owner"] = username
-	id, err := s.db.Coll(collname).Insert(data)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, sprig.Map{"error": err.Error()})
+	if body[0] == '[' {
+		// --- Array of objects ---
+		var rawItems []json.RawMessage
+		if err := json.Unmarshal(body, &rawItems); err != nil {
+			return c.JSON(http.StatusBadRequest, sprig.Map{"error": jsonSyntaxMessage(body, err)})
+		}
+		if len(rawItems) == 0 {
+			return c.JSON(http.StatusBadRequest, sprig.Map{"error": "array must contain at least one document"})
+		}
+		if len(rawItems) > maxBulkInsert {
+			return c.JSON(http.StatusBadRequest, sprig.Map{
+				"error": fmt.Sprintf("bulk insert limited to %d documents per request, got %d", maxBulkInsert, len(rawItems)),
+			})
+		}
+
+		docs := make([]sprig.Map, 0, len(rawItems))
+		for i, raw := range rawItems {
+			var item sprig.Map
+			if err := json.Unmarshal(raw, &item); err != nil {
+				return c.JSON(http.StatusBadRequest, sprig.Map{
+					"error": fmt.Sprintf("item %d: %s", i, jsonSyntaxMessage(raw, err)),
+				})
+			}
+			if item == nil {
+				return c.JSON(http.StatusBadRequest, sprig.Map{
+					"error": fmt.Sprintf("item %d is not a JSON object", i),
+				})
+			}
+			delete(item, "id")
+
+			if err := ValidateDocument(item, schema, false); err != nil {
+				return c.JSON(http.StatusBadRequest, sprig.Map{
+					"error": fmt.Sprintf("item %d: %s", i, err.Error()),
+				})
+			}
+
+			item["_owner"] = username
+			docs = append(docs, item)
+		}
+
+		ids, err := s.db.Coll(collname).InsertMany(docs)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, sprig.Map{"error": err.Error()})
+		}
+		return c.JSON(http.StatusCreated, sprig.Map{"ids": ids})
 	}
-	return c.JSON(http.StatusCreated, sprig.Map{"id": id})
+
+	return c.JSON(http.StatusBadRequest, sprig.Map{"error": "request body must be a JSON object or array"})
 }
 
 // HandleGetQuery handles GET /api/:collname — Query documents with filters and pagination.
