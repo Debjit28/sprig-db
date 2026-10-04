@@ -27,3 +27,6 @@ faculty_demo.json
 
 
 
+*.sprig
+*.db
+.env
