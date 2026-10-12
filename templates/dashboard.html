@@ -142,24 +142,49 @@
           <label class="form-label" for="coll-name">Collection Name</label>
           <input class="form-input" type="text" id="coll-name" required placeholder="e.g. users">
         </div>
+
         <div class="form-group">
-          <label class="form-label" for="field-name">First Field Name</label>
-          <input class="form-input" type="text" id="field-name" required placeholder="e.g. email">
+          <label class="form-label">Schema Mode</label>
+          <div style="display:flex; gap:8px;">
+            <button type="button" id="mode-btn-none" class="btn btn-ghost btn-sm" onclick="setSchemaMode('none')">No schema</button>
+            <button type="button" id="mode-btn-single" class="btn btn-primary btn-sm" onclick="setSchemaMode('single')">Single field</button>
+            <button type="button" id="mode-btn-full" class="btn btn-ghost btn-sm" onclick="setSchemaMode('full')">Full schema (JSON)</button>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="field-type">First Field Type</label>
-          <select class="form-select" id="field-type">
-            <option value="string">String</option>
-            <option value="number">Number</option>
-            <option value="bool">Boolean</option>
-          </select>
+
+        <div id="single-field-section">
+          <div class="form-group">
+            <label class="form-label" for="field-name">First Field Name</label>
+            <input class="form-input" type="text" id="field-name" placeholder="e.g. email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="field-type">First Field Type</label>
+            <select class="form-select" id="field-type">
+              <option value="string">String</option>
+              <option value="number">Number</option>
+              <option value="bool">Boolean</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;">
+              <input type="checkbox" id="field-required">
+              Required field
+            </label>
+          </div>
         </div>
-        <div class="form-group">
-          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;">
-            <input type="checkbox" id="field-required">
-            Required field
-          </label>
+
+        <div id="full-schema-section" style="display:none;">
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label class="form-label" for="full-schema-json" style="margin-bottom:0;">Schema Definition (JSON)</label>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="loadExampleSchema()" style="font-size:12px; padding:4px 8px;">Load example</button>
+            </div>
+            <textarea class="form-textarea" id="full-schema-json" style="min-height:160px; font-family:var(--font-mono); font-size:13px;" placeholder='{"fields": {"name": {"type": "string", "required": true}}, "additionalFields": "allow"}'></textarea>
+          </div>
         </div>
+
+        <div id="create-modal-error" style="display:none; padding:12px; border:1px solid var(--danger); border-radius:var(--radius); background:var(--danger-bg); color:var(--danger); font-size:13px; margin-bottom:16px; white-space:pre-wrap;"></div>
+
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" onclick="hideCreateModal()">Cancel</button>
           <button type="submit" class="btn btn-primary">Create</button>
@@ -193,21 +218,84 @@
       document.getElementById('nosql-inputs').style.display = mode === 'nosql' ? 'flex' : 'none';
     }
 
-    function showCreateModal() { document.getElementById('create-modal').style.display = 'flex'; }
-    function hideCreateModal() { document.getElementById('create-modal').style.display = 'none'; }
+    let schemaMode = 'single';
+
+    function setSchemaMode(mode) {
+      schemaMode = mode;
+      document.getElementById('mode-btn-none').className = mode === 'none' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+      document.getElementById('mode-btn-single').className = mode === 'single' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+      document.getElementById('mode-btn-full').className = mode === 'full' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+
+      document.getElementById('single-field-section').style.display = mode === 'single' ? 'block' : 'none';
+      document.getElementById('full-schema-section').style.display = mode === 'full' ? 'block' : 'none';
+
+      const fieldName = document.getElementById('field-name');
+      if (mode === 'single') {
+        fieldName.setAttribute('required', 'required');
+      } else {
+        fieldName.removeAttribute('required');
+      }
+    }
+
+    function loadExampleSchema() {
+      const example = {
+        "fields": {
+          "name": { "type": "string", "required": true },
+          "affiliation": { "type": "string" },
+          "role": { "type": "string" },
+          "origin": { "type": "string" },
+          "bounty": { "type": "number", "min": 0 },
+          "devilFruit": { "type": "string" },
+          "active": { "type": "boolean", "default": true }
+        },
+        "additionalFields": "allow"
+      };
+      document.getElementById('full-schema-json').value = JSON.stringify(example, null, 2);
+    }
+
+    function showCreateModal() {
+      document.getElementById('create-modal-error').style.display = 'none';
+      document.getElementById('create-modal').style.display = 'flex';
+    }
+    function hideCreateModal() {
+      document.getElementById('create-modal').style.display = 'none';
+      document.getElementById('create-modal-error').style.display = 'none';
+    }
 
     async function createCollection(e) {
       e.preventDefault();
-      const name = document.getElementById('coll-name').value;
-      const fieldName = document.getElementById('field-name').value;
-      const fieldType = document.getElementById('field-type').value;
-      const fieldRequired = document.getElementById('field-required').checked;
+      const errBox = document.getElementById('create-modal-error');
+      errBox.style.display = 'none';
 
-      const payload = {
-        name,
-        fields: {}
-      };
-      payload.fields[fieldName] = { type: fieldType, required: fieldRequired };
+      const name = document.getElementById('coll-name').value.trim();
+      let payload = { name };
+
+      if (schemaMode === 'none') {
+        payload.fields = {};
+        payload.additionalFields = 'allow';
+      } else if (schemaMode === 'single') {
+        const fieldName = document.getElementById('field-name').value.trim();
+        const fieldType = document.getElementById('field-type').value;
+        const fieldRequired = document.getElementById('field-required').checked;
+        payload.fields = {};
+        payload.fields[fieldName] = { type: fieldType, required: fieldRequired };
+        payload.additionalFields = 'allow';
+      } else if (schemaMode === 'full') {
+        const jsonStr = document.getElementById('full-schema-json').value.trim();
+        if (!jsonStr) {
+          errBox.textContent = 'Please enter a schema JSON definition';
+          errBox.style.display = 'block';
+          return;
+        }
+        try {
+          const parsed = JSON.parse(jsonStr);
+          payload = Object.assign({}, parsed, { name });
+        } catch (parseErr) {
+          errBox.textContent = 'Invalid JSON: ' + parseErr.message;
+          errBox.style.display = 'block';
+          return;
+        }
+      }
 
       const headers = {'Content-Type': 'application/json'};
       if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -221,8 +309,13 @@
       if (res.ok) {
         window.location.reload();
       } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to create collection');
+        const data = await res.json().catch(() => ({}));
+        let msg = data.error || 'Failed to create collection';
+        if (data.errors && data.errors.length > 0) {
+          msg = data.errors.join('\n');
+        }
+        errBox.textContent = msg;
+        errBox.style.display = 'block';
       }
     }
 
