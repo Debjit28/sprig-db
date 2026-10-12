@@ -42,32 +42,46 @@
 Below is a walkthrough of the Sprig-DB web interface and tooling:
 
 ### 1. Authentication & Security
+
 Secure login and registration with interactive CAPTCHA verification and JWT session management.
-![Login Page](image.png)
+
+![Login Page](./image.png)
 
 ### 2. Admin Dashboard Overview
+
 Real-time tenant statistics, collection summaries, and quick navigation across datasets.
-![Dashboard](image-1.png)
+
+![Dashboard](./image-1.png)
 
 ### 3. Collection Browser & Data Viewer
+
 Explore collection records with auto-detected dynamic columns, record counts, and pagination controls.
-![Database](image-3.png)
+
+![Database](./image-3.png)
 
 ### 4. Data Ingestion & Insertion
+
 Insert single documents or batches of JSON objects with immediate schema validation.
-![Insertion of Data](image-2.png)
+
+![Insertion of Data](./image-2.png)
 
 ### 5. Interactive SQL Query Console
+
 Execute SQL queries with column projection, multi-field filtering, sorting, and pagination directly against embedded collections.
-![SQL Mode](image-4.png)
+
+![SQL Mode](./image-4.png)
 
 ### 6. Schema Management & Dry-Run Validation
+
 Define field types, constraints, and configure strict vs. permissive modes (`additionalFields`). Perform live dry-run checks against existing records before committing changes.
-![Option for Edit Schema](image-6.png)
+
+![Option for Edit Schema](./image-6.png)
 
 ### 7. Request Logs & Troubleshooting
+
 Tenant-scoped request logs capturing execution timestamps, HTTP methods, paths, status codes, and error traces.
-![Logs for Easy Troubleshooting](image-5.png)
+
+![Logs for Easy Troubleshooting](./image-5.png)
 
 ---
 
