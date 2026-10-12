@@ -66,19 +66,6 @@ func currentUsername(c echo.Context) (string, error) {
 	return username, nil
 }
 
-type collectionCreateRequest struct {
-	Name string `json:"name"`
-
-	// Preferred (UI) format.
-	Fields map[string]FieldSchema `json:"fields,omitempty"`
-
-	// Unknown field handling: "allow" or "reject". Default is "allow".
-	AdditionalFields string `json:"additionalFields,omitempty"`
-
-	// Optional JSON-schema format (subset of draft-04) for easier authoring.
-	JSONSchema map[string]any `json:"json_schema,omitempty"`
-}
-
 // HandleCreateCollection handles POST /api/collections.
 func (s *Server) HandleCreateCollection(c echo.Context) error {
 	username, err := currentUsername(c)
