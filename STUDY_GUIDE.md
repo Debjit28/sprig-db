@@ -1,4 +1,4 @@
-# 🌱 Sprig-DB: Complete Technical Study Guide & Presentation Notes
+# Sprig-DB: Complete Technical Study Guide & Presentation Notes
 
 > **Quick Links:**
 > - Printable PDF: [SprigDB_Master_Presentation_and_Study_Guide.pdf](file:///home/mr_fool/golang/sprig-db/SprigDB_Master_Presentation_and_Study_Guide.pdf)
@@ -6,7 +6,7 @@
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Executive Presentation Pitch & Novelty](#1-executive-presentation-pitch--novelty)
 2. [Concepts Learned & The Learning Journey](#2-concepts-learned--the-learning-journey)
 3. [System Architecture & Transaction Pipeline](#3-system-architecture--transaction-pipeline)
