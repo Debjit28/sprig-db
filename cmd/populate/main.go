@@ -51,18 +51,25 @@ func massiveInsert(collection string, count int) {
 				
 				// Format payload to make it unique and filterable
 				var finalPayload []byte
-				if collection == "users" {
+				switch collection {
+				case "users":
 					role := "customer"
-					if idx%10 == 0 { role = "admin" }
-					finalPayload = []byte(fmt.Sprintf(`{"name": "User%d", "role": "%s", "active": "true"}`, idx, role))
-				} else if collection == "products" {
+					if idx%10 == 0 {
+						role = "admin"
+					}
+					finalPayload = fmt.Appendf(nil, `{"name": "User%d", "role": "%s", "active": "true"}`, idx, role)
+				case "products":
 					category := "Electronics"
-					if idx%5 == 0 { category = "Furniture" }
-					finalPayload = []byte(fmt.Sprintf(`{"product": "Item%d", "price": %.2f, "category": "%s"}`, idx, float64(idx)*1.5, category))
-				} else {
+					if idx%5 == 0 {
+						category = "Furniture"
+					}
+					finalPayload = fmt.Appendf(nil, `{"product": "Item%d", "price": %.2f, "category": "%s"}`, idx, float64(idx)*1.5, category)
+				default:
 					status := "processing"
-					if idx%3 == 0 { status = "shipped" }
-					finalPayload = []byte(fmt.Sprintf(`{"order_id": "ORD-%d", "status": "%s"}`, idx, status))
+					if idx%3 == 0 {
+						status = "shipped"
+					}
+					finalPayload = fmt.Appendf(nil, `{"order_id": "ORD-%d", "status": "%s"}`, idx, status)
 				}
 
 				req, _ := http.NewRequest("POST", "http://localhost:7777/api/"+collection, bytes.NewBuffer(finalPayload))
