@@ -72,6 +72,9 @@ type collectionCreateRequest struct {
 	// Preferred (UI) format.
 	Fields map[string]FieldSchema `json:"fields,omitempty"`
 
+	// Unknown field handling: "allow" or "reject". Default is "allow".
+	AdditionalFields string `json:"additionalFields,omitempty"`
+
 	// Optional JSON-schema format (subset of draft-04) for easier authoring.
 	JSONSchema map[string]any `json:"json_schema,omitempty"`
 }
@@ -95,11 +98,18 @@ func (s *Server) HandleCreateCollection(c echo.Context) error {
 			return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
 		}
 		schema = converted
+		if req.AdditionalFields != "" {
+			schema.AdditionalFields = req.AdditionalFields
+		}
 	} else {
 		schema = &CollectionSchema{
-			Name:   req.Name,
-			Fields: req.Fields,
+			Name:             req.Name,
+			Fields:           req.Fields,
+			AdditionalFields: req.AdditionalFields,
 		}
+	}
+	if schema.AdditionalFields == "" {
+		schema.AdditionalFields = "allow"
 	}
 	if err := schema.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
@@ -151,11 +161,18 @@ func (s *Server) HandlePutCollectionSchema(c echo.Context) error {
 			return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
 		}
 		schema = converted
+		if req.AdditionalFields != "" {
+			schema.AdditionalFields = req.AdditionalFields
+		}
 	} else {
 		schema = &CollectionSchema{
-			Name:   collname,
-			Fields: req.Fields,
+			Name:             collname,
+			Fields:           req.Fields,
+			AdditionalFields: req.AdditionalFields,
 		}
+	}
+	if schema.AdditionalFields == "" {
+		schema.AdditionalFields = "allow"
 	}
 	if err := schema.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})

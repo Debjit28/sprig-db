@@ -260,16 +260,40 @@ func TestSchemaValidation_ReproduceSingleFieldRejection(t *testing.T) {
 		wantContains string
 	}{
 		{
-			name: "single field schema name only rejects crew.json array due to unknown fields",
+			name: "single field schema with reject rejects crew.json array due to unknown fields",
+			schema: CollectionSchema{
+				Name: "items",
+				Fields: map[string]FieldSchema{
+					"name": {Type: "string", Required: true},
+				},
+				AdditionalFields: "reject",
+			},
+			body:         string(crewData),
+			wantStatus:   http.StatusBadRequest,
+			wantContains: `is not defined in schema`,
+		},
+		{
+			name: "single field schema with allow accepts crew.json array",
+			schema: CollectionSchema{
+				Name: "items",
+				Fields: map[string]FieldSchema{
+					"name": {Type: "string", Required: true},
+				},
+				AdditionalFields: "allow",
+			},
+			body:       string(crewData),
+			wantStatus: http.StatusCreated,
+		},
+		{
+			name: "existing stored schema with empty additionalFields treated as allow",
 			schema: CollectionSchema{
 				Name: "items",
 				Fields: map[string]FieldSchema{
 					"name": {Type: "string", Required: true},
 				},
 			},
-			body:         string(crewData),
-			wantStatus:   http.StatusBadRequest,
-			wantContains: `is not defined in schema`,
+			body:       string(crewData),
+			wantStatus: http.StatusCreated,
 		},
 	}
 
@@ -294,7 +318,7 @@ func TestSchemaValidation_ReproduceSingleFieldRejection(t *testing.T) {
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("got status %d, want %d; body: %s", rec.Code, tt.wantStatus, rec.Body.String())
 			}
-			if !strings.Contains(rec.Body.String(), tt.wantContains) {
+			if tt.wantContains != "" && !strings.Contains(rec.Body.String(), tt.wantContains) {
 				t.Fatalf("expected response to contain %q; got: %s", tt.wantContains, rec.Body.String())
 			}
 		})
