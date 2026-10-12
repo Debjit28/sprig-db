@@ -325,3 +325,96 @@ func TestSchemaValidation_ReproduceSingleFieldRejection(t *testing.T) {
 	}
 }
 
+func TestInt64SafeNumbers(t *testing.T) {
+	dbName := "test_int64_numbers"
+	db, err := sprig.New(sprig.WithDBName(dbName))
+	if err != nil {
+		t.Fatalf("failed to create db: %v", err)
+	}
+	defer db.DropDatabase(dbName)
+
+	srv := NewServer(db)
+	minZero := 0.0
+	schema := CollectionSchema{
+		Name: "items",
+		Fields: map[string]FieldSchema{
+			"name":   {Type: "string", Required: true},
+			"bounty": {Type: "number", Min: &minZero},
+		},
+		AdditionalFields: "allow",
+	}
+	if err := db.CreateCollection("items"); err != nil {
+		t.Fatalf("create coll: %v", err)
+	}
+	if err := srv.schemas.Upsert("testuser", schema); err != nil {
+		t.Fatalf("upsert schema: %v", err)
+	}
+
+	t.Run("insert and retrieve large bounty 5564800000 without truncation", func(t *testing.T) {
+		body := `{"name": "Gol D. Roger", "bounty": 5564800000}`
+		rec := makeInsertRequest(t, srv, body)
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("expected 201 Created, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		result, err := db.Coll("items").Eq(sprig.Map{"name": "Gol D. Roger"}).Find()
+		if err != nil {
+			t.Fatalf("find failed: %v", err)
+		}
+		if len(result.Data) == 0 {
+			t.Fatal("expected 1 document")
+		}
+
+		bountyVal := result.Data[0]["bounty"]
+		bf, ok := toFloat(bountyVal)
+		if !ok {
+			t.Fatalf("expected numeric bounty, got %T: %v", bountyVal, bountyVal)
+		}
+		const expectedBounty = 5564800000.0
+		if bf != expectedBounty {
+			t.Fatalf("expected bounty %v, got %v", expectedBounty, bf)
+		}
+		// Confirm it was NOT truncated to int32 (1269832704)
+		if int64(bf) != 5564800000 {
+			t.Fatalf("bounty truncated: got int64 %d, want 5564800000", int64(bf))
+		}
+	})
+
+	t.Run("validate with json.Number without truncation", func(t *testing.T) {
+		doc := sprig.Map{
+			"name":   "Gol D. Roger",
+			"bounty": json.Number("5564800000"),
+		}
+		if err := ValidateDocument(doc, &schema, false); err != nil {
+			t.Fatalf("validation failed for json.Number: %v", err)
+		}
+
+		// Min check above bounty
+		minHigh := 6000000000.0
+		schemaHigh := CollectionSchema{
+			Name: "items",
+			Fields: map[string]FieldSchema{
+				"bounty": {Type: "number", Min: &minHigh},
+			},
+			AdditionalFields: "allow",
+		}
+		if err := ValidateDocument(doc, &schemaHigh, false); err == nil {
+			t.Fatal("expected min violation for 5564800000 < 6000000000")
+		}
+
+		// Max check below bounty
+		maxLow := 5000000000.0
+		schemaLow := CollectionSchema{
+			Name: "items",
+			Fields: map[string]FieldSchema{
+				"bounty": {Type: "number", Max: &maxLow},
+			},
+			AdditionalFields: "allow",
+		}
+		if err := ValidateDocument(doc, &schemaLow, false); err == nil {
+			t.Fatal("expected max violation for 5564800000 > 5000000000")
+		}
+	})
+}
+
+

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -350,6 +351,9 @@ func toFloat64(v any) (float64, bool) {
 		return float64(n), true
 	case float64:
 		return n, true
+	case json.Number:
+		f, err := n.Float64()
+		return f, err == nil
 	default:
 		return 0, false
 	}
