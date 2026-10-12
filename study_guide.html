@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sprig-DB: Complete Technical Study Guide & Presentation Notes</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 15mm 20mm 15mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    color: #1f2937;
+    background: #ffffff;
+    font-size: 13px;
+    margin: 0;
+    padding: 0;
+  }
+  h1, h2, h3, h4 {
+    color: #0f172a;
+    font-weight: 700;
+    page-break-after: avoid;
+  }
+  h1 { font-size: 26px; border-bottom: 2px solid #0284c7; padding-bottom: 8px; margin-top: 0; }
+  h2 { font-size: 19px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top: 24px; color: #0369a1; }
+  h3 { font-size: 15px; margin-top: 18px; color: #0f172a; }
+  h4 { font-size: 13px; margin-top: 12px; }
+  
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    background: #e0f2fe;
+    color: #0369a1;
+    margin-right: 6px;
+  }
+  .highlight-box {
+    background: #f8fafc;
+    border-left: 4px solid #0284c7;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout-warning {
+    background: #fffbeb;
+    border-left: 4px solid #d97706;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout-novelty {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  pre {
+    background: #0f172a;
+    color: #f8fafc;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11px;
+    line-height: 1.45;
+    overflow-x: auto;
+    page-break-inside: avoid;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11.5px;
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 12px;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 6px 10px;
+    text-align: left;
+  }
+  th {
+    background: #f1f5f9;
+    font-weight: 600;
+    color: #334155;
+  }
+  tr:nth-child(even) {
+    background: #f8fafc;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+  .hero-header {
+    text-align: center;
+    padding: 24px 0 16px 0;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 24px;
+  }
+  .hero-header h1 {
+    font-size: 30px;
+    border: none;
+    margin-bottom: 4px;
+  }
+  .hero-subtitle {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+  .qa-q {
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 12px;
+  }
+  .qa-a {
+    color: #334155;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero-header">
+  <h1>🌱 Sprig-DB</h1>
+  <div class="hero-subtitle">Comprehensive Architectural Study Guide & Presentation Masterplan</div>
+  <div>
+    <span class="badge">Embedded Storage</span>
+    <span class="badge">ACID B+Tree Engine</span>
+    <span class="badge">Dynamic Schema Validation</span>
+    <span class="badge">SQL-on-NoSQL</span>
+    <span class="badge">Multi-Tenancy</span>
+    <span class="badge">HTMX Glassmorphism</span>
+  </div>
+</div>
+
+<h2>Table of Contents</h2>
+<ol>
+  <li><strong>Executive Presentation Pitch & Novelty</strong> (What & Why)</li>
+  <li><strong>Concepts Learned & The Journey</strong> (How Did You Learn It?)</li>
+  <li><strong>System Architecture & Transaction Pipeline</strong> (Mental Model)</li>
+  <li><strong>Component-by-Component & Line-by-Line Code Breakdown</strong>
+    <ul>
+      <li>Storage Core (<code>sprig/sprig.go</code>)</li>
+      <li>B-Tree Secondary Indexing (<code>sprig/index.go</code>)</li>
+      <li>Fluent Query Engine & Mutation Safety (<code>sprig/filter.go</code>)</li>
+      <li>Encoding & Number Fidelity (<code>sprig/encoding.go</code>)</li>
+      <li>Schema Engine & Preflight Dry-Run (<code>api/schema.go</code> & <code>api/schema_parser.go</code>)</li>
+      <li>SQL Parsing & AST Execution (<code>api/sql_query.go</code>)</li>
+      <li>Multi-Tenant Security & Captcha (<code>api/auth.go</code>)</li>
+      <li>REST Server & Atomic Bulk Ingestion (<code>api/api.go</code>)</li>
+      <li>Dashboard & Zero-Bundle Frontend (<code>api/web.go</code> & HTMX)</li>
+      <li>Benchmarking & Concurrency Proof (<code>cmd/loadtest/main.go</code>)</li>
+    </ul>
+  </li>
+  <li><strong>Minute-by-Minute Presentation Script & Slide Outline</strong></li>
+  <li><strong>Tough Viva / Interview Defense Q&A</strong></li>
+</ol>
+
+<hr/>
+
+<div class="page-break"></div>
+
+<h2>1. Executive Presentation Pitch & Novelty</h2>
+
+<h3>The Problem Statement</h3>
+<p>
+Modern application development is plagued by a binary choice between two extremes:
+</p>
+<ol>
+  <li><strong>Heavy Client-Server Databases (PostgreSQL, MongoDB):</strong> Require Docker containers, networking overhead, connection pools, user provisioning, and maintenance ops. Total overkill for edge computing, local desktop tools, CLI utilities, and embedded devices.</li>
+  <li><strong>Primitive Embedded Key-Value Stores (raw BoltDB, RocksDB, SQLite):</strong>
+    <ul>
+      <li>BoltDB and RocksDB only give you raw byte slices: <code>[]byte -> []byte</code>. You get zero document awareness, zero schema validation, no secondary index maintenance, and no query language.</li>
+      <li>SQLite is relational and fixed-schema; handling arbitrary polymorphic JSON structures requires clunky JSON extensions without native document collection abstractions.</li>
+    </ul>
+  </li>
+</ol>
+
+<div class="callout-novelty">
+  <h4>💡 The Novelty of Sprig-DB</h4>
+  <p>
+    <strong>Sprig-DB bridges the gap between raw embedded key-value storage and full-fledged document databases.</strong>
+    It takes an ultra-reliable, zero-dependency embedded B+tree engine (<code>bbolt</code>) and builds a complete, production-ready document database platform directly in Go:
+  </p>
+  <ul>
+    <li><strong>Zero-Overhead Embedded Engine:</strong> Runs in-process with your Go binary; single-file storage (<code>.sprig</code>), zero daemon processes, instant startup, and zero operational overhead.</li>
+    <li><strong>Automatic Secondary B-Tree Indexing:</strong> Seamlessly extracts fields into secondary B-tree buckets using composite prefix keys (<code>value:id</code>), giving sub-millisecond equality queries without full table scans.</li>
+    <li><strong>Pre-Flight Schema Dry-Run (Novel Feature):</strong> Unlike MongoDB (which validates only at insert time) or SQL (which locks tables during alters), Sprig-DB introduces an instant <code>/schema/check</code> dry-run endpoint. It evaluates a proposed schema against existing records in memory before committing, showing exact violating documents.</li>
+    <li><strong>Dual Query Engine (NoSQL & SQL):</strong> Developers can query records either via a fluent programmatic Go API (<code>Coll("users").Eq(...).Find()</code>) or via standard SQL queries (<code>SELECT ... WHERE ... ORDER BY ... LIMIT ...</code>).</li>
+    <li><strong>Multi-Tenancy at the Storage Layer:</strong> Strict tenant isolation (<code>_owner</code> partitioning) built straight into the engine, ensuring multi-user isolation on an embedded database file.</li>
+    <li><strong>Modern Glassmorphic Web Dashboard:</strong> Server-rendered using Echo and HTMX—providing an administrative UI with zero JavaScript build toolchain (no Node, no Webpack).</li>
+  </ul>
+</div>
+
+<hr/>
+
+<h2>2. Concepts Learned & The Learning Journey ("How Did I Learn It?")</h2>
+
+<p>
+In your presentation, tell this story chronologically. It demonstrates that you did not just copy code—you solved real systems-level engineering challenges:
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Engineering Domain</th>
+      <th>Theoretical Concept</th>
+      <th>Practical Challenge & How You Learned It</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Storage & ACID Engines</strong></td>
+      <td>B+Tree layout, Memory-mapped I/O (mmap), Write-Ahead logging vs Copy-on-Write B-Trees.</td>
+      <td>
+        Learned how <code>bbolt</code> achieves ACID guarantees using single-writer, multiple-reader transactions. Understood how data is organized into nested "Buckets" and persisted to a single memory-mapped file.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Binary Key Sorting</strong></td>
+      <td>Big-Endian vs Little-Endian integer lexicographical sort order in B-Trees.</td>
+      <td>
+        <em>The Bug:</em> When saving document IDs as Little-Endian or strings, ID <code>10</code> sorted before ID <code>2</code>. 
+        <em>The Solution:</em> Converted uint64 IDs into 8-byte Big-Endian byte arrays (<code>binary.BigEndian.PutUint64</code>), forcing the disk B-Tree to keep records in strictly ascending numerical order.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Secondary Indexing</strong></td>
+      <td>Composite index keys, Inverted indexes, Range cursors, Prefix scanning.</td>
+      <td>
+        Built index buckets formatted as <code>_idx_{coll}_{field}</code>. Designed composite keys <code>fmt.Sprintf("%v:%d", value, id)</code> so bbolt's cursor seek can jump directly to the target prefix in $O(\log N)$ time and iterate matches.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Concurrency & Synchronization</strong></td>
+      <td>Read-Write Mutexes (<code>sync.RWMutex</code>), Transaction deadlocks, Goroutine safety.</td>
+      <td>
+        BoltDB allows unlimited read transactions concurrently but strictly <em>one</em> write transaction at a time. Solved deadlocks by wrapping operations with granular mutexes and using <code>defer tx.Rollback()</code> before commit.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Data Fidelity & JSON Pitfalls</strong></td>
+      <td>IEEE-754 64-bit float precision loss with large integers.</td>
+      <td>
+        Standard Go <code>json.Unmarshal</code> turns every number into <code>float64</code>, truncating large int64 IDs. Solved by configuring custom decoders with <code>dec.UseNumber()</code> and building custom type coercers.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Query Parsing & Interpretation</strong></td>
+      <td>Tokenization, Abstract Syntax Trees (AST), SQL execution pipelines.</td>
+      <td>
+        Wrote a regular-expression and token-based parser for SQL (<code>SELECT</code>, <code>WHERE</code> with nested <code>AND</code>/<code>OR</code>, <code>ORDER BY</code>, <code>LIMIT</code>, <code>OFFSET</code>) that compiles into in-memory filters over document maps.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Defensive Mutation Safeguards</strong></td>
+      <td>Fail-safe systems programming.</td>
+      <td>
+        Implemented <code>ErrNoFilter</code>: prevented accidental execution of <code>UPDATE</code> or <code>DELETE</code> without a filter, preventing catastrophic data wipeouts.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>High-Throughput Load Testing</strong></td>
+      <td>Benchmarking, Concurrency barriers (<code>sync.WaitGroup</code>), Atomic counters.</td>
+      <td>
+        Built a 200-worker concurrent HTTP load tester in <code>cmd/loadtest/main.go</code> blasting 25,000 schema-validated requests to verify engine stability under saturation.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="page-break"></div>
+
+<h2>3. High-Level System Architecture</h2>
+
+<pre>
+                                 +-----------------------------------+
+                                 |         HTTP / Client Layer       |
+                                 |  (REST API / Web UI via Echo)     |
+                                 +-----------------+-----------------+
+                                                   |
+                     +-----------------------------+-----------------------------+
+                     |                                                           |
+       +-------------v-------------+                               +-------------v-------------+
+       |   Authentication & RBAC   |                               |      HTMX Web Dashboard   |
+       |  - JWT Bearer & Cookie    |                               |  - Glassmorphic UI        |
+       |  - SVG Captcha Generator  |                               |  - Live Collection Browser|
+       |  - Bcrypt Password Hash   |                               |  - Interactive SQL Console|
+       +-------------+-------------+                               +-------------+-------------+
+                     |                                                           |
+                     +-----------------------------+-----------------------------+
+                                                   |
+                                 +-----------------v-----------------+
+                                 |         API Server Layer          |
+                                 |   (/api/records, /api/collections)|
+                                 +-----------------+-----------------+
+                                                   |
+                     +-----------------------------+-----------------------------+
+                     |                                                           |
+       +-------------v-------------+                               +-------------v-------------+
+       |   Schema Enforcement      |                               |   SQL Query Processor     |
+       |  - Type & Range Validation|                               |  - Regex Lexer & Parser   |
+       |  - JSON-Schema Draft-04   |                               |  - Logical Evaluator      |
+       |  - Dry-Run /check Engine  |                               |  - Projection & Sorter    |
+       +-------------+-------------+                               +-------------+-------------+
+                     |                                                           |
+                     +-----------------------------+-----------------------------+
+                                                   |
+                                 +-----------------v-----------------+
+                                 |     Sprig Core Database Engine    |
+                                 |  - Filter Query Builder (Eq, ...) |
+                                 |  - Auto Big-Endian Sequence ID    |
+                                 |  - Secondary Index Manager        |
+                                 |  - Mutex Concurrency Control      |
+                                 +-----------------+-----------------+
+                                                   |
+                                 +-----------------v-----------------+
+                                 |      bbolt (Embedded B+Tree)      |
+                                 |  - ACID Transactions (Mmap disk)  |
+                                 |  - Bucket Hierarchy (_idx_, docs) |
+                                 +-----------------+-----------------+
+                                                   |
+                                          [ default.sprig ]
+</pre>
+
+<hr/>
+
+<div class="page-break"></div>
+
+<h2>4. Component-by-Component & Line-by-Line Code Breakdown</h2>
+
+<h3>Module 1: <code>sprig/sprig.go</code> — The Core Engine & Lifecycle</h3>
+<p>
+This file defines the heart of the database: the <code>Sprig</code> struct, initialization, bucket creation, and database lifecycle management.
+</p>
+
+<pre><code>type Sprig struct {
+    mu              sync.RWMutex  // Protects database handle & schema operations
+    currentDatabase string        // Holds filename: e.g., "default.sprig"
+    *Options                      // Embedded configuration (custom encoders/decoders)
+    db              *bbolt.DB     // Underlying bbolt embedded database handle
+}</code></pre>
+
+<h4>Detailed Code Walkthrough:</h4>
+<ul>
+  <li><strong>Line 35: <code>func New(options ...OptFunc) (*Sprig, error)</code></strong><br/>
+    Implements the <em>Functional Options Pattern</em> in Go. Sets default options (standard JSON encoder/decoder, default DB name <code>"default"</code>), appends extension <code>.sprig</code>, and opens the file with permissions <code>0666</code> via <code>bbolt.Open()</code>.
+  </li>
+  <li><strong>Line 57: <code>func (h *Sprig) Close() error</code></strong><br/>
+    Acquires an exclusive write lock (<code>h.mu.Lock()</code>) to guarantee no concurrent queries or transactions are executing, then flushes and closes the bbolt file.
+  </li>
+  <li><strong>Line 76: <code>func (h *Sprig) CreateCollection(name string) error</code></strong><br/>
+    Begins an ACID write transaction: <code>tx, err := h.db.Begin(true)</code>.<br/>
+    <strong>Crucial Go Pattern:</strong> <code>defer tx.Rollback()</code>. If any panic or error occurs before <code>tx.Commit()</code>, the transaction rolls back automatically with zero file corruption! If <code>tx.Commit()</code> succeeds, the rollback becomes a no-op.
+  </li>
+  <li><strong>Line 94: <code>func (h *Sprig) DropCollection(name string) error</code></strong><br/>
+    Deletes the primary collection bucket via <code>tx.DeleteBucket([]byte(name))</code>. Next, it scans all top-level buckets using <code>tx.ForEach</code> to find any index buckets matching the prefix <code>_idx_{collection}_</code> and deletes them too. This guarantees <em>zero orphan index buckets</em> on disk.
+  </li>
+  <li><strong>Line 132: <code>func (h *Sprig) Coll(name string) *Filter</code></strong><br/>
+    Returns a new <code>*Filter</code> query builder tied to the specified collection.
+  </li>
+  <li><strong>Line 137: <code>func (h *Sprig) ListCollections() ([]string, error)</code></strong><br/>
+    Acquires a read lock (<code>h.mu.RLock()</code>) and opens a read-only transaction (<code>h.db.View()</code>). Iterates over bucket names and filters out system buckets that start with <code>'_'</code> (such as <code>_schemas</code>, <code>_users</code>, <code>_logs</code>, and <code>_idx_*</code>), returning only user-visible collections.
+  </li>
+</ul>
+
+<hr/>
+
+<h3>Module 2: <code>sprig/index.go</code> — Secondary B-Tree Indexing</h3>
+<p>
+This is one of the most intellectually impressive components in Sprig-DB: turning raw key-value storage into an index-accelerated document store.
+</p>
+
+<pre><code>// Bucket Naming Convention:
+// _idx_{collection}_{field}
+//
+// Key format inside index bucket:
+// [field_value]:[document_id] -> value: [document_id (8 bytes)]</code></pre>
+
+<h4>Key Mechanisms & Functions:</h4>
+<ul>
+  <li><strong>Sensitive Field Masking (Line 13):</strong><br/>
+    <code>var sensitiveFields = map[string]bool{"password": true, "secret": true, "token": true}</code>.<br/>
+    The indexing engine actively inspects incoming document fields and refuses to write index entries for passwords or secret tokens. This prevents credential leaks in index dumps.
+  </li>
+  <li><strong>Composite Index Key (Line 34):</strong><br/>
+    <code>key := fmt.Appendf(nil, "%v:%d", value, id)</code>.<br/>
+    <strong>Why composite <code>value:id</code>?</strong> In a secondary index, multiple documents can share the same field value (e.g. <code>role = "developer"</code>). If the key was merely the value, a new document would overwrite the previous document's key! By appending <code>:id</code>, every key is globally unique while staying sorted together.
+  </li>
+  <li><strong>Range Prefix Scanning (Line 63: <code>lookupByIndex</code>):</strong><br/>
+    Takes the query value (e.g., <code>"active"</code>) and forms prefix <code>"active:"</code>. Uses bbolt's B-Tree cursor:
+    <code>c.Seek(prefix)</code> jumps directly to the first match in $O(\log N)$ time! It then iterates sequentially (<code>c.Next()</code>) collecting document IDs until the key prefix changes.
+  </li>
+</ul>
+
+<div class="page-break"></div>
+
+<h3>Module 3: <code>sprig/filter.go</code> — Fluent Query Builder & Big-Endian Storage</h3>
+<p>
+Contains the query builder API, record serialization, big-endian key generation, and query execution.
+</p>
+
+<h4>1. Big-Endian Numerical Key Ordering:</h4>
+<pre><code>func uint64Bytes(v uint64) []byte {
+    b := make([]byte, 8)
+    binary.BigEndian.PutUint64(b, v)
+    return b
+}</code></pre>
+<p>
+<strong>Why Big-Endian?</strong> B-Tree engines like bbolt sort keys using standard byte-by-byte lexicographical comparison (<code>bytes.Compare</code>). If you store numbers as Little-Endian or string representation, <code>"10"</code> comes before <code>"2"</code>. Big-Endian ensures binary byte order strictly matches numerical integer order (<code>0x00...01 < 0x00...02 < ...</code>).
+</p>
+
+<h4>2. Defensive Mutation Safeguards:</h4>
+<pre><code>var ErrNoFilter = errors.New("refusing to mutate without filters — add at least one Eq() filter...")</code></pre>
+<p>
+Both <code>Update()</code> (line 311) and <code>Delete()</code> (line 353) check <code>if len(f.compFilters) == 0 { return ErrNoFilter }</code>.<br/>
+This stops developers from inadvertently running an empty update/delete that wipes out every document in production.
+</p>
+
+<h4>3. Smart Index Acceleration vs Full Scan:</h4>
+<ul>
+  <li><code>Find()</code> (line 200) inspects active filters. If there is exactly one <code>Eq</code> filter on a single field, it executes <code>tryIndexFind()</code> to resolve records via the secondary B-tree index in milliseconds.</li>
+  <li>If no index is available, it gracefully falls back to <code>findFiltered()</code>, streaming through the bucket cursor while evaluating predicate functions.</li>
+</ul>
+
+<hr/>
+
+<h3>Module 4: <code>api/schema.go</code> & <code>api/schema_parser.go</code> — Schema Enforcement & Dry-Run</h3>
+<p>
+Implements document validation, nested objects/arrays, regex pattern matching, enum constraints, and the pre-flight dry-run validator.
+</p>
+
+<h4>The Schema Data Model:</h4>
+<pre><code>type FieldSchema struct {
+    Type             string                 `json:"type"`             // string, number, bool, array, object
+    Required         bool                   `json:"required"`
+    Enum             []string               `json:"enum,omitempty"`
+    Min              *float64               `json:"min,omitempty"`
+    Max              *float64               `json:"max,omitempty"`
+    MinLength        *int                   `json:"minLength,omitempty"`
+    MaxLength        *int                   `json:"maxLength,omitempty"`
+    Default          any                    `json:"default,omitempty"`
+    AdditionalFields string                 `json:"additionalFields,omitempty"`
+    Properties       map[string]FieldSchema `json:"properties,omitempty"` // For nested objects
+    Items            *FieldSchema           `json:"items,omitempty"`      // For arrays
+}</code></pre>
+
+<h4>The Pre-Flight Schema Dry-Run (<code>HandleCheckCollectionSchema</code>):</h4>
+<p>
+When an administrator edits a schema on a collection with thousands of existing records, standard databases either reject the alter or force a migration. Sprig-DB allows a <strong>Dry-Run Verification</strong>:
+</p>
+<ol>
+  <li>The handler receives the proposed schema without updating the database.</li>
+  <li>It iterates over all existing tenant documents in the collection.</li>
+  <li>It executes <code>ValidateDocument()</code> in memory on clones of the documents.</li>
+  <li>It counts exact matches, counts failures, and collects the first 10 violation error strings with document IDs.</li>
+  <li>The UI alerts the user: <em>"4 of 1,200 documents do not match the new schema"</em>, displaying the exact reasons!</li>
+</ol>
+
+<div class="page-break"></div>
+
+<h3>Module 5: <code>api/sql_query.go</code> — SQL-on-NoSQL Parser & Execution Engine</h3>
+<p>
+Enables relational SQL queries over unstructured and semi-structured embedded JSON documents!
+</p>
+
+<pre><code>// Supported SQL Syntax:
+// SELECT <fields> FROM <collection> [WHERE <expr>] [ORDER BY <field> [ASC|DESC]] [LIMIT n] [OFFSET n]
+var sqlSelectRe = regexp.MustCompile(
+    `(?is)^SELECT\s+(.+?)\s+FROM\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s+WHERE\s+(.+?))?(?:\s+ORDER\s+BY\s+(.+?))?(?:\s+LIMIT\s+(\d+))?(?:\s+OFFSET\s+(\d+))?\s*;?\s*$`
+)</code></pre>
+
+<h4>Pipeline Stages of <code>ExecuteSQLQuery</code>:</h4>
+<ol>
+  <li><strong>Clause Extraction:</strong> Regexp decomposes the query into Select, From, Where, OrderBy, Limit, and Offset clauses.</li>
+  <li><strong>Tenant Filter:</strong> Enforces <code>r["_owner"] == owner</code>, ensuring cross-tenant data leaks are physically impossible.</li>
+  <li><strong>Recursive Logical Evaluation (<code>evalWhereClause</code>):</strong>
+    Splits expressions on <code>OR</code>, then on <code>AND</code>. Evaluates comparison operators:
+    <code>=</code>, <code>!=</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>, <code>LIKE</code> (substring pattern match), and <code>IN</code>.
+  </li>
+  <li><strong>Multi-Key Stable Sorting (<code>sort.SliceStable</code>):</strong>
+    Parses comma-separated <code>ORDER BY age DESC, name ASC</code>, performing type-safe comparisons across strings and numbers.
+  </li>
+  <li><strong>Pagination Window:</strong> Slices the matching array according to <code>OFFSET</code> and <code>LIMIT</code>.</li>
+  <li><strong>Column Projection:</strong> Filters out unwanted keys unless <code>SELECT *</code> was requested.</li>
+</ol>
+
+<hr/>
+
+<h3>Module 6: <code>api/auth.go</code> — Multi-Tenancy & Visual SVG CAPTCHA</h3>
+<p>
+Provides enterprise multi-tenant isolation, bcrypt credential hashing, and zero-dependency CAPTCHA protection.
+</p>
+
+<h4>1. In-Memory Programmatic SVG CAPTCHA (Line 81):</h4>
+<p>
+Instead of pulling in bulky external image rendering libraries (CGo, libpng, freetype), Sprig-DB generates lightweight SVG vectors directly in Go!
+It generates random alphanumeric characters, creates noise vectors (angled crossing lines, randomized colored circles), base64-encodes the SVG as a <code>data:image/svg+xml;base64,...</code> URI, and pairs it with a temporary token stored in a thread-safe <code>sync.Map</code>.
+</p>
+
+<h4>2. Multi-Tenant Partitioning:</h4>
+<p>
+Every user has their own distinct workspace. When user <code>alice</code> creates a collection or inserts documents, the database injects <code>_owner: "alice"</code> into the record metadata. Every search, update, delete, and list operation filters by <code>_owner</code>, guaranteeing total privacy on a shared embedded database file.
+</p>
+
+<hr/>
+
+<h3>Module 7: <code>cmd/loadtest/main.go</code> — Concurrency & Stress Testing</h3>
+<p>
+Proves that the engine is not a toy, but a high-performance, robust system capable of enterprise throughput:
+</p>
+<ul>
+  <li>Launches <strong>200 concurrent worker goroutines</strong>.</li>
+  <li>Dispatches <strong>25,000 HTTP requests</strong> with JSON schema validation enabled.</li>
+  <li>Utilizes <code>sync/atomic</code> counters for zero-contention metrics tracking.</li>
+  <li>Demonstrates that BoltDB's single-writer architecture with Go's HTTP server handles thousands of requests per second with zero data corruption.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>5. Minute-by-Minute Presentation Script & Slide Outline</h2>
+
+<p>
+Use this battle-tested 10-minute presentation structure. It highlights your technical depth and confidence:
+</p>
+
+<h3>Slide 1: Title & The Core Vision (Minute 0:00 - 1:30)</h3>
+<ul>
+  <li><em>What to say:</em> "Good morning everyone. Today I'm presenting <strong>Sprig-DB</strong>, an ultra-lightweight, embedded document database with dynamic schema enforcement, SQL querying, and a modern glassmorphic dashboard built in Go.
+  The motivation behind Sprig-DB was simple: developers building desktop tools, CLI tools, and edge services shouldn't have to spin up heavy MongoDB or Postgres daemons, but raw embedded key-value stores like BoltDB only give you raw bytes with zero validation, no secondary indexes, and no query language. Sprig-DB solves this by bringing document intelligence and schema safety to embedded storage."</li>
+</ul>
+
+<h3>Slide 2: Architecture & Storage Engine (Minute 1:30 - 3:30)</h3>
+<ul>
+  <li><em>What to say:</em> "Under the hood, Sprig-DB is built on top of an ACID B+Tree engine using memory-mapped I/O.
+  Our data layer organizes documents into collections using nested B-Tree buckets.
+  One critical systems concept I tackled was <strong>numerical key sorting in B-Trees</strong>. B-Trees sort lexicographically. If document IDs are formatted as strings or Little-Endian integers, ID 10 sorts before ID 2. I solved this by encoding IDs as 8-byte Big-Endian byte slices, guaranteeing that physical disk order strictly matches numerical sequence order."</li>
+</ul>
+
+<h3>Slide 3: Secondary Indexing & $O(\log N)$ Queries (Minute 3:30 - 5:00)</h3>
+<ul>
+  <li><em>What to say:</em> "To prevent full collection scans on queries, I engineered an automated secondary indexing engine.
+  Whenever a document is inserted or updated, Sprig-DB writes composite keys formatted as <code>value:id</code> into dedicated index buckets.
+  When an equality query arrives, the engine uses bbolt's cursor seek to jump to the prefix in $O(\log N)$ time and extracts matching IDs without scanning the entire collection.
+  Furthermore, I implemented defensive indexing: sensitive fields like passwords, tokens, and secrets are automatically excluded from index buckets."</li>
+</ul>
+
+<h3>Slide 4: Dynamic Schemas & Pre-Flight Dry-Run (Minute 5:00 - 6:45)</h3>
+<ul>
+  <li><em>What to say:</em> "The standout novelty of Sprig-DB is its <strong>Dual Schema System and Pre-Flight Dry-Run verification</strong>.
+  We support both native schema definitions and industry-standard JSON-Schema Draft-04, enforcing field types, min/max ranges, string regex patterns, enums, and nested arrays/objects.
+  Even better: in existing databases, altering a schema can silently corrupt data or fail midway. In Sprig-DB, we provide a <code>/schema/check</code> dry-run endpoint. Before applying a new schema, the engine validates all existing records in-memory, returning an exact audit of which documents fail and why, allowing administrators to make safe schema evolutions."</li>
+</ul>
+
+<h3>Slide 5: SQL-on-NoSQL & Multi-Tenant Security (Minute 6:45 - 8:15)</h3>
+<ul>
+  <li><em>What to say:</em> "Sprig-DB includes an interactive dual query console: NoSQL programmatic filters and standard SQL queries.
+  I built a SQL tokenizer and evaluator from scratch supporting column projection, WHERE clauses with boolean logic, multi-field ORDER BY, LIMIT, and OFFSET.
+  On the security side, we have true multi-tenancy. All collections, schemas, queries, and request logs are partitioned per user via <code>_owner</code> metadata. We also built an in-memory SVG CAPTCHA generator that protects authentication routes without external image dependencies."</li>
+</ul>
+
+<h3>Slide 6: Benchmarks, Demos & Conclusion (Minute 8:15 - 10:00)</h3>
+<ul>
+  <li><em>What to say:</em> "To prove the production-readiness of the system, I authored a concurrent load tester that blasts 25,000 schema-validated requests across 200 concurrent workers, sustaining high throughput with zero transaction failures or race conditions.
+  In summary, Sprig-DB proves that you don't need a heavy client-server database to have schemas, secondary indexing, SQL queries, and a beautiful UI. Thank you, and I am now ready for any questions!"</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>6. Tough Viva / Interview Defense Questions & Model Answers</h2>
+
+<div class="qa-q">Q1: Why did you choose bbolt instead of SQLite?</div>
+<div class="qa-a">
+  <strong>Answer:</strong> SQLite is relational and table-oriented; storing semi-structured polymorphic JSON documents in SQLite requires awkward JSON functions and circumvents relational indexing. BoltDB is a pure, minimalist B+Tree key-value store with clean transactional semantics. Building on bbolt gave us complete control over our document model, bucket hierarchies, custom secondary indexing, and dynamic schema validation layers.
+</div>
+
+<div class="qa-q">Q2: BoltDB only allows a single concurrent writer. Doesn't that bottleneck write throughput?</div>
+<div class="qa-a">
+  <strong>Answer:</strong> BoltDB uses an MVCC single-writer, multiple-reader model. While writes are serialized, transactions commit directly to memory-mapped pages and disk sequentially, achieving tens of thousands of writes per second. Additionally, Sprig-DB features <strong>Atomic Bulk Ingestion</strong> (<code>InsertMany</code>), which commits up to 100 documents in a <em>single</em> write transaction, drastically reducing disk sync overhead and maximizing write efficiency.
+</div>
+
+<div class="qa-q">Q3: How does your secondary index prevent key collisions for documents with identical values?</div>
+<div class="qa-a">
+  <strong>Answer:</strong> We format index keys as composite strings: <code>value:id</code> (for example, <code>engineer:101</code> and <code>engineer:102</code>). Because the primary document ID is globally unique, the composite key is guaranteed to be unique. This allows multiple documents to share the same indexed attribute value while occupying adjacent positions in the B-Tree for rapid prefix range scanning.
+</div>
+
+<div class="qa-q">Q4: How do you prevent floating-point precision issues with large 64-bit integer IDs in JSON?</div>
+<div class="qa-a">
+  <strong>Answer:</strong> Standard Go <code>json.Unmarshal</code> decodes JSON numbers as <code>float64</code>, which causes precision loss for integers greater than $2^{53}$. We configured our decoders with <code>dec.UseNumber()</code> and wrote custom numeric casting helpers (<code>toFloat64</code>) that preserve int64 fidelity during filter evaluations.
+</div>
+
+<div class="qa-q">Q5: How does your SQL parser handle operator precedence between AND and OR?</div>
+<div class="qa-a">
+  <strong>Answer:</strong> In <code>api/sql_query.go</code>, we implement a two-tier evaluation strategy. The WHERE expression is first split along logical <code>OR</code> boundaries, and each segment is then split along logical <code>AND</code> boundaries. This naturally satisfies standard Disjunctive Normal Form (DNF), ensuring that <code>AND</code> binds tighter than <code>OR</code> during predicate evaluation.
+</div>
+
+<div class="qa-q">Q6: What happens if the server crashes during an insert?</div>
+<div class="qa-a">
+  <strong>Answer:</strong> BoltDB is strictly ACID compliant. Every mutation runs inside a transaction block with <code>defer tx.Rollback()</code>. If a power outage or crash occurs before <code>tx.Commit()</code> successfully flushes to the write-ahead log and disk, the file remains completely uncorrupted in its last consistent state.
+</div>
+
+<div class="qa-q">Q7: Why use HTMX instead of React or Vue for the dashboard?</div>
+<div class="qa-a">
+  <strong>Answer:</strong> HTMX aligns perfectly with the philosophy of an embedded database: simplicity and zero overhead. By rendering server-side templates with Go's <code>html/template</code> and letting HTMX handle partial DOM swaps, we achieved a dynamic, single-page-app feel with modal dialogs and live tables with <em>zero Node.js dependencies, zero bundle build steps, and instant load times</em>.
+</div>
+
+<hr/>
+<div style="text-align:center; color:#64748b; font-size:11px; margin-top:20px;">
+  Sprig-DB — Master Study Guide & Presentation Notes &bull; Generated for Presentation Defense
+</div>
+
+</body>
+</html>
