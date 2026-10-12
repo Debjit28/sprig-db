@@ -57,6 +57,10 @@
           <p style="color:var(--text-muted); font-size:14px; margin-top:8px;">{{.Result.Total}} documents in this collection</p>
         </div>
         <div style="display:flex; gap:12px;">
+          <button class="btn btn-ghost" onclick="showEditSchemaModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            Edit Schema
+          </button>
           <button class="btn btn-primary" onclick="showInsertModal()">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Insert Document
@@ -140,6 +144,26 @@
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" onclick="hideInsertModal()">Cancel</button>
           <button type="submit" class="btn btn-primary">Insert</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="edit-schema-modal" class="modal-backdrop" style="display:none;" onclick="if(event.target===this) { hideEditSchemaModal(); }">
+    <div class="modal" style="max-width:550px;">
+      <div class="modal-title">Edit Schema — {{.Name}}</div>
+      <form onsubmit="saveSchema(event)">
+        <div class="form-group">
+          <label class="form-label" for="edit-schema-json">Schema Definition (JSON)</label>
+          <textarea class="form-textarea" id="edit-schema-json" required style="min-height:220px; font-family:var(--font-mono); font-size:13px;"></textarea>
+        </div>
+        <div id="schema-check-result" style="display:none; padding:12px; border-radius:var(--radius); font-size:13px; margin-bottom:16px; white-space:pre-wrap;"></div>
+        <div class="modal-actions" style="justify-content:space-between;">
+          <button type="button" class="btn btn-ghost" onclick="checkExistingDocs()">Check existing documents</button>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn-ghost" onclick="hideEditSchemaModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Schema</button>
+          </div>
         </div>
       </form>
     </div>
@@ -269,6 +293,137 @@
         setTimeout(() => window.location.reload(), 500);
       } else {
         showToast('Delete failed', 'error');
+      }
+    }
+
+    async function showEditSchemaModal() {
+      const el = document.getElementById('edit-schema-modal');
+      const resBox = document.getElementById('schema-check-result');
+      resBox.style.display = 'none';
+
+      const headers = {};
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      try {
+        const res = await fetch('/api/collections/' + encodeURIComponent(collName) + '/schema', {
+          headers,
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const schema = await res.json();
+          document.getElementById('edit-schema-json').value = JSON.stringify(schema, null, 2);
+        } else {
+          document.getElementById('edit-schema-json').value = JSON.stringify({
+            fields: {},
+            additionalFields: "allow"
+          }, null, 2);
+        }
+      } catch (err) {
+        document.getElementById('edit-schema-json').value = JSON.stringify({
+          fields: {},
+          additionalFields: "allow"
+        }, null, 2);
+      }
+      el.style.display = 'flex';
+    }
+
+    function hideEditSchemaModal() {
+      document.getElementById('edit-schema-modal').style.display = 'none';
+      document.getElementById('schema-check-result').style.display = 'none';
+    }
+
+    async function checkExistingDocs() {
+      const resBox = document.getElementById('schema-check-result');
+      resBox.style.display = 'none';
+      const jsonStr = document.getElementById('edit-schema-json').value.trim();
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonStr);
+      } catch (e) {
+        resBox.textContent = 'Invalid JSON: ' + e.message;
+        resBox.style.background = 'var(--danger-bg)';
+        resBox.style.color = 'var(--danger)';
+        resBox.style.border = '1px solid var(--danger)';
+        resBox.style.display = 'block';
+        return;
+      }
+
+      const headers = {'Content-Type': 'application/json'};
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      const res = await fetch('/api/collections/' + encodeURIComponent(collName) + '/schema/check', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(parsed)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        if (data.invalid === 0) {
+          resBox.textContent = data.message || 'All documents match the schema';
+          resBox.style.background = 'rgba(16, 185, 129, 0.1)';
+          resBox.style.color = 'var(--success, #10b981)';
+          resBox.style.border = '1px solid var(--success, #10b981)';
+        } else {
+          let text = data.message || `${data.invalid} of ${data.total} documents do not match the new schema`;
+          if (data.errors && data.errors.length > 0) {
+            text += '\n\n' + data.errors.join('\n');
+          }
+          resBox.textContent = text;
+          resBox.style.background = 'var(--danger-bg)';
+          resBox.style.color = 'var(--danger)';
+          resBox.style.border = '1px solid var(--danger)';
+        }
+      } else {
+        resBox.textContent = data.error || 'Failed to check documents';
+        resBox.style.background = 'var(--danger-bg)';
+        resBox.style.color = 'var(--danger)';
+        resBox.style.border = '1px solid var(--danger)';
+      }
+      resBox.style.display = 'block';
+    }
+
+    async function saveSchema(e) {
+      e.preventDefault();
+      const resBox = document.getElementById('schema-check-result');
+      resBox.style.display = 'none';
+      const jsonStr = document.getElementById('edit-schema-json').value.trim();
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonStr);
+      } catch (err) {
+        resBox.textContent = 'Invalid JSON: ' + err.message;
+        resBox.style.background = 'var(--danger-bg)';
+        resBox.style.color = 'var(--danger)';
+        resBox.style.border = '1px solid var(--danger)';
+        resBox.style.display = 'block';
+        return;
+      }
+
+      const headers = {'Content-Type': 'application/json'};
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      const res = await fetch('/api/collections/' + encodeURIComponent(collName) + '/schema', {
+        method: 'PUT',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(parsed)
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.version ? `Schema updated (v${data.version})` : 'Schema updated', 'success');
+        hideEditSchemaModal();
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        let msg = data.error || 'Failed to save schema';
+        if (data.errors && data.errors.length > 0) {
+          msg = data.errors.join('\n');
+        }
+        resBox.textContent = msg;
+        resBox.style.background = 'var(--danger-bg)';
+        resBox.style.color = 'var(--danger)';
+        resBox.style.border = '1px solid var(--danger)';
+        resBox.style.display = 'block';
       }
     }
   </script>

@@ -417,4 +417,146 @@ func TestInt64SafeNumbers(t *testing.T) {
 	})
 }
 
+func TestEditSchema_Versioning_CheckExistingDocs(t *testing.T) {
+	dbName := "test_edit_schema_versioning"
+	db, err := sprig.New(sprig.WithDBName(dbName))
+	if err != nil {
+		t.Fatalf("create db: %v", err)
+	}
+	defer db.DropDatabase(dbName)
+
+	srv := NewServer(db)
+	e := echo.New()
+	collName := "straw_hat_pirates"
+
+	// 1. Create collection with name-only schema (v1)
+	if err := db.CreateCollection(collName); err != nil {
+		t.Fatalf("create coll: %v", err)
+	}
+	initialSchema := CollectionSchema{
+		Name: collName,
+		Fields: map[string]FieldSchema{
+			"name": {Type: "string", Required: true},
+		},
+		AdditionalFields: "allow",
+	}
+	if err := srv.schemas.Upsert("testuser", initialSchema); err != nil {
+		t.Fatalf("upsert initial schema: %v", err)
+	}
+
+	gotSchema, err := srv.schemas.Get("testuser", collName)
+	if err != nil || gotSchema.Version != 1 {
+		t.Fatalf("expected version 1, got err: %v, version: %v", err, gotSchema.Version)
+	}
+
+	// 2. Insert existing document
+	doc := sprig.Map{
+		"name":   "Monkey D. Luffy",
+		"bounty": 3000000000.0,
+		"_owner": "testuser",
+	}
+	docID, err := db.Coll(collName).Insert(doc)
+	if err != nil {
+		t.Fatalf("insert doc: %v", err)
+	}
+
+	// 3. Test Check Existing Documents against a schema requiring "affiliation"
+	checkPayload := `{
+		"fields": {
+			"name": {"type": "string", "required": true},
+			"affiliation": {"type": "string", "required": true}
+		},
+		"additionalFields": "allow"
+	}`
+	reqCheck := httptest.NewRequest(http.MethodPost, "/api/collections/"+collName+"/schema/check", strings.NewReader(checkPayload))
+	reqCheck.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	recCheck := httptest.NewRecorder()
+	cCheck := e.NewContext(reqCheck, recCheck)
+	cCheck.SetParamNames("collname")
+	cCheck.SetParamValues(collName)
+	cCheck.Set("username", "testuser")
+
+	if err := srv.HandleCheckCollectionSchema(cCheck); err != nil {
+		t.Fatalf("check handler failed: %v", err)
+	}
+	if recCheck.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", recCheck.Code, recCheck.Body.String())
+	}
+
+	var checkResp map[string]any
+	if err := json.Unmarshal(recCheck.Body.Bytes(), &checkResp); err != nil {
+		t.Fatalf("unmarshal check resp: %v", err)
+	}
+	if checkResp["invalid"] != float64(1) {
+		t.Fatalf("expected invalid=1, got: %v", checkResp["invalid"])
+	}
+
+	// Verify the existing document was NOT altered or deleted by the check
+	found, err := db.Coll(collName).Eq(sprig.Map{"id": docID}).Find()
+	if err != nil || len(found.Data) == 0 {
+		t.Fatalf("existing document missing after check: %v", err)
+	}
+	if found.Data[0]["name"] != "Monkey D. Luffy" {
+		t.Fatalf("existing document corrupted: %v", found.Data[0])
+	}
+
+	// 4. Update the schema via PUT (v2) adding bounty
+	putPayload := `{
+		"fields": {
+			"name": {"type": "string", "required": true},
+			"bounty": {"type": "number", "min": 0}
+		},
+		"additionalFields": "allow"
+	}`
+	reqPut := httptest.NewRequest(http.MethodPut, "/api/collections/"+collName+"/schema", strings.NewReader(putPayload))
+	reqPut.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	recPut := httptest.NewRecorder()
+	cPut := e.NewContext(reqPut, recPut)
+	cPut.SetParamNames("collname")
+	cPut.SetParamValues(collName)
+	cPut.Set("username", "testuser")
+
+	if err := srv.HandlePutCollectionSchema(cPut); err != nil {
+		t.Fatalf("put schema failed: %v", err)
+	}
+	if recPut.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", recPut.Code, recPut.Body.String())
+	}
+
+	// Check updated schema version is 2
+	v2Schema, err := srv.schemas.Get("testuser", collName)
+	if err != nil || v2Schema.Version != 2 {
+		t.Fatalf("expected version 2, got err: %v, version: %v", err, v2Schema.Version)
+	}
+
+	// Verify existing document was NOT rewritten or deleted after schema edit
+	afterPutFound, err := db.Coll(collName).Eq(sprig.Map{"id": docID}).Find()
+	if err != nil || len(afterPutFound.Data) == 0 {
+		t.Fatalf("existing document missing after schema edit: %v", err)
+	}
+	if afterPutFound.Data[0]["name"] != "Monkey D. Luffy" || afterPutFound.Data[0]["bounty"] != 3000000000.0 {
+		t.Fatalf("existing document changed after schema edit: %v", afterPutFound.Data[0])
+	}
+
+	// 5. Check existing docs with the updated schema -> should now report 0 invalid
+	recCheck2 := httptest.NewRecorder()
+	reqCheck2 := httptest.NewRequest(http.MethodPost, "/api/collections/"+collName+"/schema/check", nil)
+	cCheck2 := e.NewContext(reqCheck2, recCheck2)
+	cCheck2.SetParamNames("collname")
+	cCheck2.SetParamValues(collName)
+	cCheck2.Set("username", "testuser")
+
+	if err := srv.HandleCheckCollectionSchema(cCheck2); err != nil {
+		t.Fatalf("check handler failed: %v", err)
+	}
+	var checkResp2 map[string]any
+	if err := json.Unmarshal(recCheck2.Body.Bytes(), &checkResp2); err != nil {
+		t.Fatalf("unmarshal check resp 2: %v", err)
+	}
+	if checkResp2["invalid"] != float64(0) {
+		t.Fatalf("expected invalid=0, got: %v", checkResp2["invalid"])
+	}
+}
+
+
 
