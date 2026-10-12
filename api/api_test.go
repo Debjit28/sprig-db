@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -244,3 +245,59 @@ func sanitizeDBName(name string) string {
 	r := strings.NewReplacer(" ", "_", "/", "_", "–", "_", "—", "_")
 	return r.Replace(strings.ToLower(name))
 }
+
+func TestSchemaValidation_ReproduceSingleFieldRejection(t *testing.T) {
+	crewData, err := os.ReadFile("../testdata/crew.json")
+	if err != nil {
+		t.Fatalf("failed to read testdata/crew.json: %v", err)
+	}
+
+	tests := []struct {
+		name         string
+		schema       CollectionSchema
+		body         string
+		wantStatus   int
+		wantContains string
+	}{
+		{
+			name: "single field schema name only rejects crew.json array due to unknown fields",
+			schema: CollectionSchema{
+				Name: "items",
+				Fields: map[string]FieldSchema{
+					"name": {Type: "string", Required: true},
+				},
+			},
+			body:         string(crewData),
+			wantStatus:   http.StatusBadRequest,
+			wantContains: `is not defined in schema`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dbName := "test_reproduce_" + sanitizeDBName(tt.name)
+			db, err := sprig.New(sprig.WithDBName(dbName))
+			if err != nil {
+				t.Fatalf("failed to create db: %v", err)
+			}
+			defer db.DropDatabase(dbName)
+
+			srv := NewServer(db)
+			if err := db.CreateCollection(tt.schema.Name); err != nil {
+				t.Fatalf("create collection: %v", err)
+			}
+			if err := srv.schemas.Upsert("testuser", tt.schema); err != nil {
+				t.Fatalf("upsert schema: %v", err)
+			}
+
+			rec := makeInsertRequest(t, srv, tt.body)
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("got status %d, want %d; body: %s", rec.Code, tt.wantStatus, rec.Body.String())
+			}
+			if !strings.Contains(rec.Body.String(), tt.wantContains) {
+				t.Fatalf("expected response to contain %q; got: %s", tt.wantContains, rec.Body.String())
+			}
+		})
+	}
+}
+
