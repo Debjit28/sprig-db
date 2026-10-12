@@ -1,6 +1,7 @@
 package sprig
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -15,7 +16,49 @@ const (
 var ErrNoFilter = errors.New("refusing to mutate without filters — add at least one Eq() filter or use a direct approach")
 
 func eq(a, b any) bool {
-	return a == b
+	if a == b {
+		return true
+	}
+	af, aOk := toFloat64(a)
+	bf, bOk := toFloat64(b)
+	if aOk && bOk {
+		return af == bf
+	}
+	return false
+}
+
+func toFloat64(v any) (float64, bool) {
+	switch n := v.(type) {
+	case int:
+		return float64(n), true
+	case int8:
+		return float64(n), true
+	case int16:
+		return float64(n), true
+	case int32:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case uint:
+		return float64(n), true
+	case uint8:
+		return float64(n), true
+	case uint16:
+		return float64(n), true
+	case uint32:
+		return float64(n), true
+	case uint64:
+		return float64(n), true
+	case float32:
+		return float64(n), true
+	case float64:
+		return n, true
+	case json.Number:
+		f, err := n.Float64()
+		return f, err == nil
+	default:
+		return 0, false
+	}
 }
 
 type comparison func(a, b any) bool

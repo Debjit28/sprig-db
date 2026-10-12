@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -11,13 +12,15 @@ import (
 const schemaCollection = "_schemas"
 
 type FieldSchema struct {
-	Type      string   `json:"type"`
-	Required  bool     `json:"required"`
-	Enum      []string `json:"enum,omitempty"`
-	Min       *float64 `json:"min,omitempty"`
-	Max       *float64 `json:"max,omitempty"`
-	MinLength *int     `json:"minLength,omitempty"`
-	MaxLength *int     `json:"maxLength,omitempty"`
+	Type             string                 `json:"type"`
+	Required         bool                   `json:"required"`
+	Enum             []string               `json:"enum,omitempty"`
+	Min              *float64               `json:"min,omitempty"`
+	Max              *float64               `json:"max,omitempty"`
+	MinLength        *int                   `json:"minLength,omitempty"`
+	MaxLength        *int                   `json:"maxLength,omitempty"`
+	Default          any                    `json:"default,omitempty"`
+	AdditionalFields string                 `json:"additionalFields,omitempty"`
 
 	// For nested validation.
 	Properties map[string]FieldSchema `json:"properties,omitempty"` // object
@@ -25,8 +28,14 @@ type FieldSchema struct {
 }
 
 type CollectionSchema struct {
-	Name   string                 `json:"name"`
-	Fields map[string]FieldSchema `json:"fields"`
+	Name             string                 `json:"name"`
+	Fields           map[string]FieldSchema `json:"fields"`
+	AdditionalFields string                 `json:"additionalFields,omitempty"`
+	Version          int                    `json:"version,omitempty"`
+}
+
+func (cs *CollectionSchema) AllowsAdditionalFields() bool {
+	return cs.AdditionalFields != "reject"
 }
 
 func (cs *CollectionSchema) Validate() error {
@@ -36,16 +45,22 @@ func (cs *CollectionSchema) Validate() error {
 	if strings.HasPrefix(cs.Name, "_") {
 		return errors.New("collection names starting with '_' are reserved")
 	}
-	if len(cs.Fields) == 0 {
-		return errors.New("schema must define at least one field")
+	if cs.AdditionalFields != "" && cs.AdditionalFields != "allow" && cs.AdditionalFields != "reject" {
+		return errors.New("additionalFields must be either \"allow\" or \"reject\"")
+	}
+	if len(cs.Fields) == 0 && cs.AdditionalFields == "reject" {
+		return errors.New("schema must define at least one field when additionalFields is reject")
 	}
 
 	for field, cfg := range cs.Fields {
 		if strings.TrimSpace(field) == "" {
 			return errors.New("field name cannot be empty")
 		}
+		if strings.HasPrefix(field, "_") || field == "_owner" || field == "_id" {
+			return fmt.Errorf("field %q: names starting with '_' are reserved", field)
+		}
 		switch cfg.Type {
-		case "string", "number", "bool", "object", "array":
+		case "string", "number", "bool", "boolean", "object", "array":
 		default:
 			return fmt.Errorf("field %q has unsupported type %q", field, cfg.Type)
 		}
@@ -91,16 +106,34 @@ func (s *SchemaStore) Upsert(owner string, schema CollectionSchema) error {
 	if err != nil {
 		return err
 	}
+
+	version := schema.Version
 	if len(existing.Data) > 0 {
+		if version <= 0 {
+			if oldV, ok := toFloat(existing.Data[0]["version"]); ok && int(oldV) > 0 {
+				version = int(oldV) + 1
+			} else {
+				version = 2
+			}
+		}
 		if err := s.db.Coll(schemaCollection).Eq(sprig.Map{"name": schema.Name, "owner": owner}).Delete(); err != nil {
 			return err
 		}
+	} else if version <= 0 {
+		version = 1
+	}
+
+	additionalFields := schema.AdditionalFields
+	if additionalFields == "" {
+		additionalFields = "allow"
 	}
 
 	_, err = s.db.Coll(schemaCollection).Insert(sprig.Map{
-		"name":   schema.Name,
-		"owner":  owner,
-		"fields": schema.Fields,
+		"name":             schema.Name,
+		"owner":            owner,
+		"fields":           schema.Fields,
+		"additionalFields": additionalFields,
+		"version":          version,
 	})
 	return err
 }
@@ -117,7 +150,8 @@ func (s *SchemaStore) Get(owner, collection string) (*CollectionSchema, error) {
 	row := result.Data[0]
 	fieldsRaw, ok := row["fields"].(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("schema for collection %q is corrupted", collection)
+		// Empty fields map is valid for schema-less
+		fieldsRaw = map[string]any{}
 	}
 
 	fields := make(map[string]FieldSchema, len(fieldsRaw))
@@ -133,9 +167,21 @@ func (s *SchemaStore) Get(owner, collection string) (*CollectionSchema, error) {
 		fields[k] = cfg
 	}
 
+	additionalFields, _ := row["additionalFields"].(string)
+	if additionalFields == "" {
+		additionalFields = "allow"
+	}
+
+	version := 1
+	if v, ok := toFloat(row["version"]); ok && int(v) > 0 {
+		version = int(v)
+	}
+
 	return &CollectionSchema{
-		Name:   collection,
-		Fields: fields,
+		Name:             collection,
+		Fields:           fields,
+		AdditionalFields: additionalFields,
+		Version:          version,
 	}, nil
 }
 
@@ -166,25 +212,35 @@ func parseFieldSchema(raw map[string]any) (FieldSchema, error) {
 		cfg.Required = required
 	}
 
+	if defVal, ok := raw["default"]; ok {
+		cfg.Default = defVal
+	}
+
+	if addF, ok := raw["additionalFields"].(string); ok {
+		cfg.AdditionalFields = addF
+	}
+
 	if enumRaw, ok := raw["enum"].([]any); ok {
 		for _, v := range enumRaw {
 			if s, ok := v.(string); ok {
 				cfg.Enum = append(cfg.Enum, s)
+			} else if v != nil {
+				cfg.Enum = append(cfg.Enum, fmt.Sprint(v))
 			}
 		}
 	}
 
-	if minRaw, ok := raw["min"].(float64); ok {
+	if minRaw, ok := toFloat(raw["min"]); ok {
 		cfg.Min = &minRaw
 	}
-	if maxRaw, ok := raw["max"].(float64); ok {
+	if maxRaw, ok := toFloat(raw["max"]); ok {
 		cfg.Max = &maxRaw
 	}
-	if minLenRaw, ok := raw["minLength"].(float64); ok {
+	if minLenRaw, ok := toFloat(raw["minLength"]); ok {
 		v := int(minLenRaw)
 		cfg.MinLength = &v
 	}
-	if maxLenRaw, ok := raw["maxLength"].(float64); ok {
+	if maxLenRaw, ok := toFloat(raw["maxLength"]); ok {
 		v := int(maxLenRaw)
 		cfg.MaxLength = &v
 	}
@@ -219,20 +275,32 @@ func ValidateDocument(doc sprig.Map, schema *CollectionSchema, partial bool) err
 		return errors.New("schema is required")
 	}
 
-	if !partial {
-		for field, cfg := range schema.Fields {
-			if cfg.Required {
-				if _, ok := doc[field]; !ok {
-					return fmt.Errorf("required field %q is missing", field)
-				}
+	// 1. Apply defaults and check required fields
+	for field, cfg := range schema.Fields {
+		val, exists := doc[field]
+		if !exists || val == nil {
+			if cfg.Default != nil {
+				doc[field] = cfg.Default
+				exists = true
+				val = cfg.Default
 			}
+		}
+		if !partial && cfg.Required && (!exists || val == nil) {
+			return fmt.Errorf("required field %q is missing", field)
 		}
 	}
 
+	// 2. Validate present fields
 	for field, value := range doc {
+		if strings.HasPrefix(field, "_") || field == "id" {
+			continue
+		}
 		cfg, ok := schema.Fields[field]
 		if !ok {
-			return fmt.Errorf("field %q is not defined in schema", field)
+			if !schema.AllowsAdditionalFields() {
+				return fmt.Errorf("field %q is not defined in schema", field)
+			}
+			continue
 		}
 		if err := validateField(value, cfg, field); err != nil {
 			return err
@@ -242,6 +310,13 @@ func ValidateDocument(doc sprig.Map, schema *CollectionSchema, partial bool) err
 }
 
 func validateField(value any, cfg FieldSchema, field string) error {
+	if value == nil {
+		if cfg.Required {
+			return fmt.Errorf("required field %q is missing", field)
+		}
+		return nil
+	}
+
 	switch cfg.Type {
 	case "string":
 		s, ok := value.(string)
@@ -277,34 +352,56 @@ func validateField(value any, cfg FieldSchema, field string) error {
 		if cfg.Max != nil && n > *cfg.Max {
 			return fmt.Errorf("field %q violates max", field)
 		}
-	case "bool":
+		if len(cfg.Enum) > 0 {
+			valid := false
+			for _, v := range cfg.Enum {
+				enumNum, ok := toFloat(v)
+				if (ok && n == enumNum) || fmt.Sprint(n) == v {
+					valid = true
+					break
+				}
+			}
+			if !valid {
+				return fmt.Errorf("field %q is not in enum", field)
+			}
+		}
+	case "bool", "boolean":
 		if _, ok := value.(bool); !ok {
 			return fmt.Errorf("field %q must be bool", field)
 		}
 	case "object":
 		obj, ok := value.(map[string]any)
 		if !ok {
-			// JSON can decode into map[string]interface{} as map[string]any; keep error simple.
 			return fmt.Errorf("field %q must be object", field)
 		}
 
-		// Required nested fields.
+		// Apply defaults and check required nested fields
 		for k, nested := range cfg.Properties {
-			if nested.Required {
-				if _, ok := obj[k]; !ok {
-					return fmt.Errorf("required field %q is missing", field+"."+k)
+			v, exists := obj[k]
+			if !exists || v == nil {
+				if nested.Default != nil {
+					obj[k] = nested.Default
+					exists = true
+				}
+			}
+			if nested.Required && (!exists || obj[k] == nil) {
+				return fmt.Errorf("required field %q is missing", field+"."+k)
+			}
+		}
+
+		allowAdd := cfg.AdditionalFields != "reject"
+		for k := range obj {
+			if strings.HasPrefix(k, "_") || k == "id" {
+				continue
+			}
+			if _, ok := cfg.Properties[k]; !ok {
+				if !allowAdd {
+					return fmt.Errorf("field %q is not defined in schema", field+"."+k)
 				}
 			}
 		}
 
-		// Strict unknown field rejection for objects.
-		for k := range obj {
-			if _, ok := cfg.Properties[k]; !ok {
-				return fmt.Errorf("field %q is not defined in schema", field+"."+k)
-			}
-		}
-
-		// Validate nested values.
+		// Validate nested values
 		for k, nestedCfg := range cfg.Properties {
 			if rawVal, ok := obj[k]; ok {
 				if err := validateField(rawVal, nestedCfg, field+"."+k); err != nil {
@@ -376,14 +473,26 @@ func ConvertJSONSchemaToCollectionSchema(collectionName string, raw map[string]a
 		fields[propName] = fieldCfg
 	}
 
+	additionalFields := "allow"
+	if af, ok := raw["additionalFields"].(string); ok && af != "" {
+		additionalFields = af
+	} else if ap, ok := raw["additionalProperties"].(bool); ok && !ap {
+		additionalFields = "reject"
+	}
+
 	return &CollectionSchema{
-		Name:   collectionName,
-		Fields: fields,
+		Name:             collectionName,
+		Fields:           fields,
+		AdditionalFields: additionalFields,
 	}, nil
 }
 
 func convertJSONSchemaField(raw map[string]any, required bool) (FieldSchema, error) {
 	cfg := FieldSchema{Required: required}
+
+	if defVal, ok := raw["default"]; ok {
+		cfg.Default = defVal
+	}
 
 	t, _ := raw["type"].(string)
 	if t == "" {
@@ -422,7 +531,7 @@ func convertJSONSchemaField(raw map[string]any, required bool) (FieldSchema, err
 		} else if maxRaw, ok := raw["max"].(float64); ok {
 			cfg.Max = &maxRaw
 		}
-	case "bool":
+	case "bool", "boolean":
 		// no extra constraints
 	case "object":
 		propsRaw, ok := raw["properties"].(map[string]any)
@@ -513,6 +622,9 @@ func toFloat(v any) (float64, bool) {
 		return float64(x), true
 	case uint64:
 		return float64(x), true
+	case json.Number:
+		f, err := x.Float64()
+		return f, err == nil
 	default:
 		return 0, false
 	}

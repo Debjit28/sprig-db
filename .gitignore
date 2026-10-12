@@ -23,10 +23,15 @@ coverage.out
 
 demo.sh
 faculty_demo.json
-
-
-
-
+image-1.png
+image-2.png
+image-3.png
+image.png
+screenshots.md
 *.sprig
 *.db
 .env
+Makefile
+
+Sprig_DB_IPR_Conference.pptx
+Sprig_DB_IPR_Conference_Final.pptx

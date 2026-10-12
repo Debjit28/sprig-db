@@ -1,0 +1,452 @@
+[
+  {
+    "name": "Monkey D. Luffy",
+    "affiliation": "Straw Hat Pirates",
+    "role": "Captain",
+    "origin": "East Blue",
+    "bounty": 3000000000,
+    "devilFruit": "Hito Hito no Mi, Model: Nika",
+    "active": true
+  },
+  {
+    "name": "Roronoa Zoro",
+    "affiliation": "Straw Hat Pirates",
+    "role": "Swordsman",
+    "origin": "East Blue",
+    "bounty": 1111000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Nami",
+    "affiliation": "Straw Hat Pirates",
+    "role": "Navigator",
+    "origin": "East Blue",
+    "bounty": 366000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Usopp",
+    "affiliation": "Straw Hat Pirates",
+    "role": "Sniper",
+    "origin": "East Blue",
+    "bounty": 500000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Sanji",
+    "affiliation": "Straw Hat Pirates",
+    "role": "Cook",
+    "origin": "North Blue",
+    "bounty": 1032000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Tony Tony Chopper",
+    "affiliation": "Straw Hat Pirates",
+    "role": "Doctor",
+    "origin": "Grand Line",
+    "bounty": 1000,
+    "devilFruit": "Hito Hito no Mi",
+    "active": true
+  },
+  {
+    "name": "Nico Robin",
+    "affiliation": "Straw Hat Pirates",
+    "role": "Archaeologist",
+    "origin": "West Blue",
+    "bounty": 930000000,
+    "devilFruit": "Hana Hana no Mi",
+    "active": true
+  },
+  {
+    "name": "Franky",
+    "affiliation": "Straw Hat Pirates",
+    "role": "Shipwright",
+    "origin": "South Blue",
+    "bounty": 394000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Brook",
+    "affiliation": "Straw Hat Pirates",
+    "role": "Musician",
+    "origin": "West Blue",
+    "bounty": 383000000,
+    "devilFruit": "Yomi Yomi no Mi",
+    "active": true
+  },
+  {
+    "name": "Jinbe",
+    "affiliation": "Straw Hat Pirates",
+    "role": "Helmsman",
+    "origin": "Grand Line",
+    "bounty": 1100000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Gol D. Roger",
+    "affiliation": "Roger Pirates",
+    "role": "Captain",
+    "origin": "East Blue",
+    "bounty": 5564800000,
+    "devilFruit": "None",
+    "active": false
+  },
+  {
+    "name": "Edward Newgate",
+    "affiliation": "Whitebeard Pirates",
+    "role": "Captain",
+    "origin": "Grand Line",
+    "bounty": 5046000000,
+    "devilFruit": "Gura Gura no Mi",
+    "active": false
+  },
+  {
+    "name": "Kaido",
+    "affiliation": "Beasts Pirates",
+    "role": "Governor-General",
+    "origin": "Grand Line",
+    "bounty": 4611100000,
+    "devilFruit": "Uo Uo no Mi, Model: Seiryu",
+    "active": false
+  },
+  {
+    "name": "Charlotte Linlin",
+    "affiliation": "Big Mom Pirates",
+    "role": "Captain",
+    "origin": "Grand Line",
+    "bounty": 4388000000,
+    "devilFruit": "Soru Soru no Mi",
+    "active": false
+  },
+  {
+    "name": "Shanks",
+    "affiliation": "Red Hair Pirates",
+    "role": "Chief",
+    "origin": "West Blue",
+    "bounty": 4048900000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Marshall D. Teach",
+    "affiliation": "Blackbeard Pirates",
+    "role": "Admiral",
+    "origin": "Grand Line",
+    "bounty": 3996000000,
+    "devilFruit": "Yami Yami no Mi",
+    "active": true
+  },
+  {
+    "name": "Dracule Mihawk",
+    "affiliation": "Cross Guild",
+    "role": "Officer",
+    "origin": "Grand Line",
+    "bounty": 3590000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Buggy",
+    "affiliation": "Cross Guild",
+    "role": "Figurehead President",
+    "origin": "Grand Line",
+    "bounty": 3189000000,
+    "devilFruit": "Bara Bara no Mi",
+    "active": true
+  },
+  {
+    "name": "Crocodile",
+    "affiliation": "Cross Guild",
+    "role": "Chief",
+    "origin": "Grand Line",
+    "bounty": 1965000000,
+    "devilFruit": "Suna Suna no Mi",
+    "active": true
+  },
+  {
+    "name": "Trafalgar D. Water Law",
+    "affiliation": "Heart Pirates",
+    "role": "Captain",
+    "origin": "North Blue",
+    "bounty": 3000000000,
+    "devilFruit": "Ope Ope no Mi",
+    "active": true
+  },
+  {
+    "name": "Eustass Kid",
+    "affiliation": "Kid Pirates",
+    "role": "Captain",
+    "origin": "South Blue",
+    "bounty": 3000000000,
+    "devilFruit": "Jiki Jiki no Mi",
+    "active": true
+  },
+  {
+    "name": "Silvers Rayleigh",
+    "affiliation": "Roger Pirates",
+    "role": "First Mate",
+    "origin": "Grand Line",
+    "bounty": 2500000000,
+    "devilFruit": "None",
+    "active": false
+  },
+  {
+    "name": "Benn Beckman",
+    "affiliation": "Red Hair Pirates",
+    "role": "First Mate",
+    "origin": "North Blue",
+    "bounty": 2200000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Boa Hancock",
+    "affiliation": "Kuja Pirates",
+    "role": "Captain",
+    "origin": "Calm Belt",
+    "bounty": 1659000000,
+    "devilFruit": "Mero Mero no Mi",
+    "active": true
+  },
+  {
+    "name": "King",
+    "affiliation": "Beasts Pirates",
+    "role": "All-Star",
+    "origin": "Red Line",
+    "bounty": 1390000000,
+    "devilFruit": "Ryu Ryu no Mi, Model: Pteranodon",
+    "active": false
+  },
+  {
+    "name": "Marco",
+    "affiliation": "Whitebeard Pirates",
+    "role": "1st Division Commander",
+    "origin": "Grand Line",
+    "bounty": 1374000000,
+    "devilFruit": "Tori Tori no Mi, Model: Phoenix",
+    "active": true
+  },
+  {
+    "name": "Queen",
+    "affiliation": "Beasts Pirates",
+    "role": "All-Star",
+    "origin": "Grand Line",
+    "bounty": 1320000000,
+    "devilFruit": "Ryu Ryu no Mi, Model: Brachiosaurus",
+    "active": false
+  },
+  {
+    "name": "Charlotte Katakuri",
+    "affiliation": "Big Mom Pirates",
+    "role": "Sweet Commander",
+    "origin": "Grand Line",
+    "bounty": 1057000000,
+    "devilFruit": "Mochi Mochi no Mi",
+    "active": true
+  },
+  {
+    "name": "Jack",
+    "affiliation": "Beasts Pirates",
+    "role": "All-Star",
+    "origin": "Grand Line",
+    "bounty": 1000000000,
+    "devilFruit": "Zou Zou no Mi, Model: Mammoth",
+    "active": false
+  },
+  {
+    "name": "Charlotte Smoothie",
+    "affiliation": "Big Mom Pirates",
+    "role": "Sweet Commander",
+    "origin": "Grand Line",
+    "bounty": 932000000,
+    "devilFruit": "Shibo Shibo no Mi",
+    "active": true
+  },
+  {
+    "name": "Charlotte Cracker",
+    "affiliation": "Big Mom Pirates",
+    "role": "Sweet Commander",
+    "origin": "Grand Line",
+    "bounty": 860000000,
+    "devilFruit": "Bisu Bisu no Mi",
+    "active": true
+  },
+  {
+    "name": "Charlotte Perospero",
+    "affiliation": "Big Mom Pirates",
+    "role": "Officer",
+    "origin": "Grand Line",
+    "bounty": 700000000,
+    "devilFruit": "Pero Pero no Mi",
+    "active": true
+  },
+  {
+    "name": "Sabo",
+    "affiliation": "Revolutionary Army",
+    "role": "Chief of Staff",
+    "origin": "East Blue",
+    "bounty": 602000000,
+    "devilFruit": "Mera Mera no Mi",
+    "active": true
+  },
+  {
+    "name": "Portgas D. Ace",
+    "affiliation": "Whitebeard Pirates",
+    "role": "2nd Division Commander",
+    "origin": "South Blue",
+    "bounty": 550000000,
+    "devilFruit": "Mera Mera no Mi",
+    "active": false
+  },
+  {
+    "name": "Kozuki Oden",
+    "affiliation": "Kozuki Clan",
+    "role": "Daimyo",
+    "origin": "Wano Country",
+    "bounty": 3820000000,
+    "devilFruit": "None",
+    "active": false
+  },
+  {
+    "name": "Donquixote Doflamingo",
+    "affiliation": "Donquixote Pirates",
+    "role": "Captain",
+    "origin": "North Blue",
+    "bounty": 340000000,
+    "devilFruit": "Ito Ito no Mi",
+    "active": false
+  },
+  {
+    "name": "Gecko Moria",
+    "affiliation": "Thriller Bark Pirates",
+    "role": "Captain",
+    "origin": "West Blue",
+    "bounty": 320000000,
+    "devilFruit": "Kage Kage no Mi",
+    "active": true
+  },
+  {
+    "name": "Bartholomew Kuma",
+    "affiliation": "Revolutionary Army",
+    "role": "Officer",
+    "origin": "South Blue",
+    "bounty": 296000000,
+    "devilFruit": "Nikyu Nikyu no Mi",
+    "active": false
+  },
+  {
+    "name": "Killer",
+    "affiliation": "Kid Pirates",
+    "role": "Combatant",
+    "origin": "South Blue",
+    "bounty": 200000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Jewelry Bonney",
+    "affiliation": "Bonney Pirates",
+    "role": "Captain",
+    "origin": "South Blue",
+    "bounty": 320000000,
+    "devilFruit": "Toshi Toshi no Mi",
+    "active": true
+  },
+  {
+    "name": "Capone Bege",
+    "affiliation": "Fire Tank Pirates",
+    "role": "Captain",
+    "origin": "West Blue",
+    "bounty": 350000000,
+    "devilFruit": "Shiro Shiro no Mi",
+    "active": true
+  },
+  {
+    "name": "Basil Hawkins",
+    "affiliation": "Hawkins Pirates",
+    "role": "Captain",
+    "origin": "North Blue",
+    "bounty": 320000000,
+    "devilFruit": "Wara Wara no Mi",
+    "active": false
+  },
+  {
+    "name": "Scratchmen Apoo",
+    "affiliation": "On Air Pirates",
+    "role": "Captain",
+    "origin": "Grand Line",
+    "bounty": 350000000,
+    "devilFruit": "Oto Oto no Mi",
+    "active": true
+  },
+  {
+    "name": "X Drake",
+    "affiliation": "Drake Pirates",
+    "role": "Captain",
+    "origin": "North Blue",
+    "bounty": 222000000,
+    "devilFruit": "Ryu Ryu no Mi, Model: Allosaurus",
+    "active": true
+  },
+  {
+    "name": "Urouge",
+    "affiliation": "Fallen Monk Pirates",
+    "role": "Captain",
+    "origin": "Sky Island",
+    "bounty": 108000000,
+    "devilFruit": "Unknown Karma Fruit",
+    "active": true
+  },
+  {
+    "name": "Cavendish",
+    "affiliation": "Beautiful Pirates",
+    "role": "Captain",
+    "origin": "Grand Line",
+    "bounty": 330000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Bartolomeo",
+    "affiliation": "Barto Club",
+    "role": "Captain",
+    "origin": "East Blue",
+    "bounty": 200000000,
+    "devilFruit": "Bari Bari no Mi",
+    "active": true
+  },
+  {
+    "name": "Sai",
+    "affiliation": "Happo Navy",
+    "role": "13th Leader",
+    "origin": "West Blue",
+    "bounty": 210000000,
+    "devilFruit": "None",
+    "active": true
+  },
+  {
+    "name": "Bellamy",
+    "affiliation": "Bellamy Pirates",
+    "role": "Captain",
+    "origin": "North Blue",
+    "bounty": 195000000,
+    "devilFruit": "Bane Bane no Mi",
+    "active": false
+  },
+  {
+    "name": "Bepo",
+    "affiliation": "Heart Pirates",
+    "role": "Navigator",
+    "origin": "Zou",
+    "bounty": 500,
+    "devilFruit": "None",
+    "active": true
+  }
+]

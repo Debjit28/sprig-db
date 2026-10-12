@@ -72,6 +72,9 @@ type collectionCreateRequest struct {
 	// Preferred (UI) format.
 	Fields map[string]FieldSchema `json:"fields,omitempty"`
 
+	// Unknown field handling: "allow" or "reject". Default is "allow".
+	AdditionalFields string `json:"additionalFields,omitempty"`
+
 	// Optional JSON-schema format (subset of draft-04) for easier authoring.
 	JSONSchema map[string]any `json:"json_schema,omitempty"`
 }
@@ -83,26 +86,52 @@ func (s *Server) HandleCreateCollection(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, sprig.Map{"error": err.Error()})
 	}
 
-	var req collectionCreateRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "invalid request body"})
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "failed to read request body"})
+	}
+	if len(body) == 0 {
+		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "request body cannot be empty"})
+	}
+	if len(body) > MaxSchemaBytes {
+		errMsg := fmt.Sprintf("schema exceeds maximum size of 64 KB (got %d bytes)", len(body))
+		return c.JSON(http.StatusBadRequest, sprig.Map{
+			"error":  errMsg,
+			"errors": []string{errMsg},
+		})
+	}
+
+	var rawMap map[string]any
+	dec := json.NewDecoder(bytes.NewReader(body))
+	dec.UseNumber()
+	if err := dec.Decode(&rawMap); err != nil {
+		return c.JSON(http.StatusBadRequest, sprig.Map{"error": jsonSyntaxMessage(body, err)})
 	}
 
 	var schema *CollectionSchema
-	if req.JSONSchema != nil {
-		converted, err := ConvertJSONSchemaToCollectionSchema(req.Name, req.JSONSchema)
+	if jsRaw, ok := rawMap["json_schema"].(map[string]any); ok && jsRaw != nil {
+		name, _ := rawMap["name"].(string)
+		converted, err := ConvertJSONSchemaToCollectionSchema(name, jsRaw)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
 		}
 		schema = converted
-	} else {
-		schema = &CollectionSchema{
-			Name:   req.Name,
-			Fields: req.Fields,
+		if af, ok := rawMap["additionalFields"].(string); ok && af != "" {
+			schema.AdditionalFields = af
 		}
-	}
-	if err := schema.Validate(); err != nil {
-		return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
+		if err := schema.Validate(); err != nil {
+			return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
+		}
+	} else {
+		reqName, _ := rawMap["name"].(string)
+		parsed, valErrs := ValidateRawSchemaMap(reqName, rawMap)
+		if len(valErrs) > 0 {
+			return c.JSON(http.StatusBadRequest, sprig.Map{
+				"error":  strings.Join(valErrs, "; "),
+				"errors": valErrs,
+			})
+		}
+		schema = parsed
 	}
 
 	if err := s.db.CreateCollection(schema.Name); err != nil {
@@ -139,31 +168,145 @@ func (s *Server) HandlePutCollectionSchema(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, sprig.Map{"error": err.Error()})
 	}
 	collname := c.Param("collname")
-	var req collectionCreateRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "invalid request body"})
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "failed to read request body"})
+	}
+	if len(body) == 0 {
+		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "request body cannot be empty"})
+	}
+	if len(body) > MaxSchemaBytes {
+		errMsg := fmt.Sprintf("schema exceeds maximum size of 64 KB (got %d bytes)", len(body))
+		return c.JSON(http.StatusBadRequest, sprig.Map{
+			"error":  errMsg,
+			"errors": []string{errMsg},
+		})
+	}
+
+	var rawMap map[string]any
+	dec := json.NewDecoder(bytes.NewReader(body))
+	dec.UseNumber()
+	if err := dec.Decode(&rawMap); err != nil {
+		return c.JSON(http.StatusBadRequest, sprig.Map{"error": jsonSyntaxMessage(body, err)})
 	}
 
 	var schema *CollectionSchema
-	if req.JSONSchema != nil {
-		converted, err := ConvertJSONSchemaToCollectionSchema(collname, req.JSONSchema)
+	if jsRaw, ok := rawMap["json_schema"].(map[string]any); ok && jsRaw != nil {
+		converted, err := ConvertJSONSchemaToCollectionSchema(collname, jsRaw)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
 		}
 		schema = converted
-	} else {
-		schema = &CollectionSchema{
-			Name:   collname,
-			Fields: req.Fields,
+		if af, ok := rawMap["additionalFields"].(string); ok && af != "" {
+			schema.AdditionalFields = af
 		}
+		if err := schema.Validate(); err != nil {
+			return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
+		}
+	} else {
+		parsed, valErrs := ValidateRawSchemaMap(collname, rawMap)
+		if len(valErrs) > 0 {
+			return c.JSON(http.StatusBadRequest, sprig.Map{
+				"error":  strings.Join(valErrs, "; "),
+				"errors": valErrs,
+			})
+		}
+		schema = parsed
 	}
-	if err := schema.Validate(); err != nil {
-		return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
-	}
+
 	if err := s.schemas.Upsert(username, *schema); err != nil {
 		return c.JSON(http.StatusBadRequest, sprig.Map{"error": err.Error()})
 	}
-	return c.JSON(http.StatusOK, sprig.Map{"message": "schema updated", "collection": collname})
+	updated, _ := s.schemas.Get(username, collname)
+	version := 1
+	if updated != nil && updated.Version > 0 {
+		version = updated.Version
+	}
+	return c.JSON(http.StatusOK, sprig.Map{
+		"message":    "schema updated",
+		"collection": collname,
+		"version":    version,
+	})
+}
+
+// HandleCheckCollectionSchema handles POST /api/collections/:collname/schema/check
+// Validates existing documents against a proposed schema without altering them.
+func (s *Server) HandleCheckCollectionSchema(c echo.Context) error {
+	username, err := currentUsername(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, sprig.Map{"error": err.Error()})
+	}
+	collname := c.Param("collname")
+	if collname == "" {
+		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "collection name is required"})
+	}
+
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, sprig.Map{"error": "failed to read request body"})
+	}
+
+	var schema *CollectionSchema
+	if len(body) > 0 {
+		var rawMap map[string]any
+		dec := json.NewDecoder(bytes.NewReader(body))
+		dec.UseNumber()
+		if err := dec.Decode(&rawMap); err != nil {
+			return c.JSON(http.StatusBadRequest, sprig.Map{"error": jsonSyntaxMessage(body, err)})
+		}
+		parsed, valErrs := ValidateRawSchemaMap(collname, rawMap)
+		if len(valErrs) > 0 {
+			return c.JSON(http.StatusBadRequest, sprig.Map{
+				"error":  strings.Join(valErrs, "; "),
+				"errors": valErrs,
+			})
+		}
+		schema = parsed
+	} else {
+		existingSchema, err := s.schemas.Get(username, collname)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, sprig.Map{"error": "schema not found for collection"})
+		}
+		schema = existingSchema
+	}
+
+	result, err := s.db.Coll(collname).Eq(sprig.Map{"_owner": username}).Find()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, sprig.Map{"error": err.Error()})
+	}
+
+	invalidCount := 0
+	var sampleErrors []string
+	for _, doc := range result.Data {
+		clone := make(sprig.Map, len(doc))
+		for k, v := range doc {
+			clone[k] = v
+		}
+
+		if err := ValidateDocument(clone, schema, false); err != nil {
+			invalidCount++
+			if len(sampleErrors) < 10 {
+				docID := doc["id"]
+				sampleErrors = append(sampleErrors, fmt.Sprintf("doc %v: %s", docID, err.Error()))
+			}
+		}
+	}
+
+	total := len(result.Data)
+	valid := total - invalidCount
+	msg := fmt.Sprintf("%d of %d documents do not match the new schema", invalidCount, total)
+	if invalidCount == 0 {
+		msg = fmt.Sprintf("All %d documents match the schema", total)
+	}
+
+	return c.JSON(http.StatusOK, sprig.Map{
+		"total":   total,
+		"invalid": invalidCount,
+		"valid":   valid,
+		"message": msg,
+		"errors":  sampleErrors,
+	})
 }
 
 // HandleDeleteCollection handles DELETE /api/collections/:collname.

@@ -140,6 +140,8 @@ func main() {
 	apiGroup.POST("/collections", server.HandleCreateCollection)
 	apiGroup.GET("/collections/:collname/schema", server.HandleGetCollectionSchema)
 	apiGroup.PUT("/collections/:collname/schema", server.HandlePutCollectionSchema)
+	apiGroup.POST("/collections/:collname/schema/check", server.HandleCheckCollectionSchema)
+	apiGroup.POST("/collections/:collname/check", server.HandleCheckCollectionSchema)
 	apiGroup.DELETE("/collections/:collname", server.HandleDeleteCollection)
 	apiGroup.POST("/records/:collname", server.HandlePostInsert)
 	apiGroup.GET("/records/:collname", server.HandleGetQuery)
