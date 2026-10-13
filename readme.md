@@ -1,7 +1,7 @@
 <div align="center">
   <h1>Sprig-DB</h1>
   <p><strong>Ultra-lightweight, embedded key-value document database with schema enforcement, SQL querying, and a glassmorphic dashboard</strong></p>
-  <p><a href="https://sprig-db.onrender.com"><strong>🚀 Live Demo</strong></a></p>
+  
   <p>Built on top of <b>bbolt</b>, Sprig-DB provides abstraction layers for collections, schemas, indexing, SQL-like querying, and multi-tenant security with a zero-configuration persistence model and a built-in REST API.</p>
 </div>
 
