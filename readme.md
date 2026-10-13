@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🌱 Sprig-DB</h1>
+  <h1>Sprig-DB</h1>
   <p><strong>Ultra-lightweight, embedded key-value document database with schema enforcement, SQL querying, and a glassmorphic dashboard</strong></p>
   <p><a href="https://sprig-db.onrender.com"><strong>🚀 Live Demo</strong></a></p>
   <p>Built on top of <b>bbolt</b>, Sprig-DB provides abstraction layers for collections, schemas, indexing, SQL-like querying, and multi-tenant security with a zero-configuration persistence model and a built-in REST API.</p>
@@ -7,7 +7,7 @@
 
 ---
 
-## ✨ Features
+## Features
 
 - **Embedded ACID Engine**: Powered by `bbolt`, providing resilient, high-speed, and ACID-compliant key-value storage.
 - **Dynamic Schema Validation**:
@@ -37,7 +37,7 @@
 
 ---
 
-## 📸 Screenshots & UI Tour
+##Screenshots & UI Tour
 
 Below is a walkthrough of the Sprig-DB web interface and tooling:
 
@@ -220,7 +220,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 ---
 
-## 🌐 HTTP REST API Reference
+## HTTP REST API Reference
 
 All protected API endpoints require JWT authentication. Obtain a token via `POST /auth/login` and provide it in the `Authorization: Bearer <token>` header or as a session cookie.
 
@@ -315,7 +315,7 @@ curl -X POST http://localhost:7777/api/collections/products/schema/check \
 
 ---
 
-## 🛠️ Embedding Sprig Programmatically
+##  Embedding Sprig Programmatically
 
 You can embed Sprig directly into your Go applications as a lightweight embedded key-value store:
 
@@ -356,7 +356,7 @@ func main() {
 
 ---
 
-## ⚠️ Current Scope & Limitations
+## Current Scope & Limitations
 
 Sprig-DB is designed as a fast, embedded educational database and lightweight micro-service store:
 - **Foreign Keys**: As a document store, relational integrity and joins are handled at the application level (see `examples/relational_embedding/main.go`).
@@ -365,7 +365,7 @@ Sprig-DB is designed as a fast, embedded educational database and lightweight mi
 
 ---
 
-## 🙌 Acknowledgments
+## Acknowledgments
 
 This project draws inspiration from learning resources in the Go and database systems communities:
 - Architectural patterns inspired by [anthdm/hopper](https://github.com/anthdm/hopper).
